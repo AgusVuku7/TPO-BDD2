@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # --- BASES DE DATOS (Requerimiento: Al menos 3 NoSQL) [cite: 18] ---
+  
+  # 1. MongoDB: Documentos (Estudiantes, Calificaciones Originales)
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - edugrade-net
+
+  # 2. Neo4j: Grafos (Trayectorias, Equivalencias)
+  neo4j:
+    image: neo4j:latest
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - edugrade-net
+
+  # 3. Redis: Key-Value (Caché de reglas de conversión)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - edugrade-net
+
+  # 4. Cassandra: Wide-Column (Auditoría inmutable)
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - edugrade-net
+
+  # --- BACKEND ---
+  api:
+    build: ./backend  # Busca el Dockerfile en la carpeta backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/src:/app/src # Hot-reload para desarrollo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/edugrade
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+      - CASSANDRA_POINT=cassandra
+    depends_on:
+      - mongo
+      - neo4j
+      - redis
+      - cassandra
+    networks:
+      - edugrade-net
+
+volumes:
+  mongo_data:
+  neo4j_data:
+  cassandra_data:
+
+networks:
+  edugrade-net:
+    driver: bridge

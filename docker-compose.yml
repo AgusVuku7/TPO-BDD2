@@ -1,9 +1,5 @@
-version: '3.8'
-
 services:
-  # --- BASES DE DATOS (Requerimiento: Al menos 3 NoSQL) [cite: 18] ---
-  
-  # 1. MongoDB: Documentos (Estudiantes, Calificaciones Originales)
+  # --- TUS BASES DE DATOS (Persistencia Políglota) ---
   mongo:
     image: mongo:latest
     ports:
@@ -13,12 +9,11 @@ services:
     networks:
       - edugrade-net
 
-  # 2. Neo4j: Grafos (Trayectorias, Equivalencias)
   neo4j:
     image: neo4j:latest
     ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
+      - "7474:7474"
+      - "7687:7687"
     environment:
       - NEO4J_AUTH=neo4j/password
     volumes:
@@ -26,36 +21,41 @@ services:
     networks:
       - edugrade-net
 
-  # 3. Redis: Key-Value (Caché de reglas de conversión)
   redis:
     image: redis:alpine
+    command: redis-server --appendonly yes
     ports:
       - "6379:6379"
+    volumes: 
+      - redis_data:/data
     networks:
       - edugrade-net
 
-  # 4. Cassandra: Wide-Column (Auditoría inmutable)
   cassandra:
     image: cassandra:latest
     ports:
       - "9042:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
     networks:
       - edugrade-net
 
-  # --- BACKEND ---
-  api:
-    build: ./backend  # Busca el Dockerfile en la carpeta backend
+  # --- TU BACKEND ---
+  backend:
+    build: ./backend              # Construye usando el Dockerfile de backend
     ports:
       - "3000:3000"
     volumes:
-      - ./backend/src:/app/src # Hot-reload para desarrollo
+      - ./backend:/app            # ¡CLAVE! Mapea tu carpeta local al contenedor
+      - /app/node_modules         # Evita que se sobrescriban los módulos
     environment:
       - MONGO_URI=mongodb://mongo:27017/edugrade
       - NEO4J_URI=bolt://neo4j:7687
       - REDIS_HOST=redis
-      - CASSANDRA_POINT=cassandra
+      - CASSANDRA_CONTACT_POINTS=cassandra
     depends_on:
       - mongo
       - neo4j
@@ -64,9 +64,25 @@ services:
     networks:
       - edugrade-net
 
+  # --- TU FRONTEND ---
+  frontend:
+    build: ./frontend             # Construye usando el Dockerfile de frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app           # Hot-reloading: cambios en VS Code se ven al instante
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - edugrade-net
+
 volumes:
   mongo_data:
   neo4j_data:
+  redis_data:
   cassandra_data:
 
 networks:

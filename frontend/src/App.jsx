@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import StudentForm from './components/StudentForm'
-// Importa aquí tus otros formularios cuando los crees:
-// import InstitutionForm from './components/InstitutionForm'
-// import SubjectForm from './components/SubjectForm'
+import EstudianteForm from './components/estudiante/EstudianteForm'
+import EstudianteList from './components/estudiante/EstudianteList'
+import InstitucionList from './components/institucion/InstitucionList'
+import InstitucionForm from './components/institucion/InstitucionForm'
+import MateriaList from './components/materia/MateriaList'
+import MateriaForm from './components/materia/MateriaForm'
 
 function App() {
-  const [view, setView] = useState('students')
+  const [view, setView] = useState('students');
 
   return (
     <div className="app-container">
@@ -22,23 +24,21 @@ function App() {
         {view === 'students' && (
           <section>
             <h2>Gestión de Estudiantes</h2>
-            <StudentForm />
+            <EstudianteList />
           </section>
         )}
         
         {view === 'institutions' && (
           <section>
             <h2>Gestión de Instituciones</h2>
-            <p>Formulario de Instituciones (Próximamente)</p>
-            {/* <InstitutionForm /> */}
+            <InstitucionList />
           </section>
         )}
 
         {view === 'subjects' && (
           <section>
             <h2>Gestión de Materias</h2>
-            <p>Formulario de Materias (Próximamente)</p>
-            {/* <SubjectForm /> */}
+            <MateriaList />
           </section>
         )}
       </main>

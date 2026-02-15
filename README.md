@@ -41,6 +41,8 @@ git add .
 git commit -m "[comentario]"
 git push origin [nombre de la branch]
 
+Ir a github de google y click en Compare and pull request, seguir..
+
 // TRAER
 git pull origin main
 

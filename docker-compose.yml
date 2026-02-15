@@ -1,5 +1,5 @@
 services:
-  # --- TUS BASES DE DATOS (Persistencia Políglota) ---
+  #BASES DE DATOS
   mongo:
     image: mongo:latest
     ports:
@@ -43,9 +43,9 @@ services:
     networks:
       - edugrade-net
 
-  # --- TU BACKEND ---
+  #BACKEND
   backend:
-    build: ./backend              # Construye usando el Dockerfile de backend
+    build: ./backend
     ports:
       - "3000:3000"
     volumes:
@@ -65,9 +65,9 @@ services:
     networks:
       - edugrade-net
 
-  # --- TU FRONTEND ---
+  #FRONTEND
   frontend:
-    build: ./frontend             # Construye usando el Dockerfile de frontend
+    build: ./frontend
     ports:
       - "5173:5173"
     volumes:

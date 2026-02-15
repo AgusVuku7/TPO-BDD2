@@ -31,3 +31,17 @@ use edugrade
 db.students.find().pretty()
 
 show collections // para ver nombre de las colecciones
+
+
+GIT:
+
+// SUBIR
+git checkout -b [nombre de la branch] // agus, lean o valen
+git add .
+git commit -m "[comentario]"
+git push origin [nombre de la branch]
+
+// TRAER
+git pull origin main
+
+

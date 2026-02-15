@@ -1,22 +1,25 @@
 require('dotenv').config();
 const app = require('./src/app');
-const { connectMongo } = require('./src/utils/DatabaseManager');
-// const { connectNeo4j } = require('./src/utils/GraphManager');
 
-const PORT = process.env.PORT;
+//Importamos la funcion que inicializa todas las bases
+const { connectAll } = require('./src/utils/DatabaseManager');
+
+const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
-    // 1. Conectar Bases de Datos (Requisito Políglota)
-    await connectMongo(); // Tu conexión actual
-    // await connectNeo4j(); // Próximo paso
+    console.log('🚀 Iniciando sistema EduGrade Global...');
 
-    // 2. Iniciar Servidor
+    //Conectamos todas las bases juntas (Mongo + Neo4j + Redis + Cassandra)
+    await connectAll(); 
+
+    //Levantamos el servidor
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor EduGrade corriendo en puerto ${PORT}`);
+      console.log(`📡 Servidor API escuchando en puerto ${PORT}`);
     });
+
   } catch (error) {
-    console.error('❌ Error al iniciar el sistema:', error);
+    console.error('❌ Error fatal al iniciar el sistema:', error);
     process.exit(1);
   }
 }

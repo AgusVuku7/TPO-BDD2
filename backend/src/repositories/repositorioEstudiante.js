@@ -17,14 +17,30 @@ class StudentRepository {
     return await Student.findById(id);
   }
 
-  async findByName(query) {
-  return await Student.find({
-    $or: [
-      { nombre: { $regex: query, $options: 'i' } },
-      { apellido: { $regex: query, $options: 'i' } }
-    ]
-  });
-}
+  async findByName(query, limit = 20, skip = 0) {
+    const filter = {
+      $or: [
+        { nombre: { $regex: query, $options: 'i' } },
+        { apellido: { $regex: query, $options: 'i' } }
+      ]
+    };
+
+    const [data, total] = await Promise.all([
+      Student.find(filter).limit(limit).skip(skip),
+      Student.countDocuments(filter)
+    ]);
+
+    return { data, total };
+  }
+
+  async findPaged(limit = 20, skip = 0) {
+    const [data, total] = await Promise.all([
+      Student.find().limit(limit).skip(skip).sort({ createdAt: -1 }),
+      Student.countDocuments()
+    ]);
+
+    return { data, total };
+  }
 
 }
 

@@ -17,11 +17,21 @@ class InstitutionRepository {
     return await Institution.findById(id);
   }
 
-  async findByName(query) {
-    // El flag 'i' hace que la búsqueda no distinga entre mayúsculas y minúsculas
-    return await Institution.find({ 
-      nombre: { $regex: query, $options: 'i' } 
-    });
+  async findByName(query, limit = 20, skip = 0) {
+    const filter = { nombre: { $regex: query, $options: 'i' } };
+    const [data, total] = await Promise.all([
+      Institution.find(filter).limit(limit).skip(skip),
+      Institution.countDocuments(filter)
+    ]);
+    return { data, total };
+  }
+
+  async findPaged(limit = 20, skip = 0) {
+    const [data, total] = await Promise.all([
+      Institution.find().limit(limit).skip(skip),
+      Institution.countDocuments()
+    ]);
+    return { data, total };
   }
 
   // async findBySystem(sistema) {

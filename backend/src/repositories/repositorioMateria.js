@@ -17,11 +17,21 @@ class SubjectRepository {
     return await Subject.findById(id);
   }
 
-  async findByName(query) {
-    // El flag 'i' hace que la búsqueda no distinga entre mayúsculas y minúsculas
-    return await Subject.find({ 
-      nombre: { $regex: query, $options: 'i' } 
-    });
+  async findByName(query, limit = 20, skip = 0) {
+    const filter = { nombre: { $regex: query, $options: 'i' } };
+    const [data, total] = await Promise.all([
+      Subject.find(filter).populate('institucion').limit(limit).skip(skip),
+      Subject.countDocuments(filter)
+    ]);
+    return { data, total };
+  }
+
+  async findPaged(limit = 20, skip = 0) {
+    const [data, total] = await Promise.all([
+      Subject.find().populate('institucion').limit(limit).skip(skip),
+      Subject.countDocuments()
+    ]);
+    return { data, total };
   }
 
     // Buscar materias de una institución específica

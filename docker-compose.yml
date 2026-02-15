@@ -49,13 +49,14 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./backend:/app            # ¡CLAVE! Mapea tu carpeta local al contenedor
-      - /app/node_modules         # Evita que se sobrescriban los módulos
+      - ./backend:/app
+      - /app/node_modules
     environment:
       - MONGO_URI=mongodb://mongo:27017/edugrade
       - NEO4J_URI=bolt://neo4j:7687
       - REDIS_HOST=redis
       - CASSANDRA_CONTACT_POINTS=cassandra
+      - PORT=3000
     depends_on:
       - mongo
       - neo4j
@@ -70,10 +71,10 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app           # Hot-reloading: cambios en VS Code se ven al instante
+      - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=http://localhost:3000/api
     depends_on:
       - backend
     networks:

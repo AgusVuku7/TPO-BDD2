@@ -3,7 +3,7 @@ const app = require('./src/app');
 const { connectMongo } = require('./src/utils/DatabaseManager');
 // const { connectNeo4j } = require('./src/utils/GraphManager');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 async function startServer() {
   try {

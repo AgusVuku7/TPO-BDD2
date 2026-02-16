@@ -13,14 +13,21 @@ router.post('/regla', async (req, res) => {
 });
 
 // RUTA PARA CONVERTIR UNA NOTA (Uso académico)
-// GET /api/conversion/convertir?origen=AR&destino=ZA&nota=9.5
 router.get('/convertir', async (req, res) => {
   try {
     const { origen, destino, nota, version } = req.query;
+
+    // Validación de presencia de datos
+    if (!origen || !destino || !nota) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos: origen, destino y nota." });
+    }
+
     const resultado = await ConversionService.convertirNota(origen, destino, nota, version);
     res.json(resultado);
   } catch (error) {
-    res.status(404).json({ error: error.message });
+    // Diferenciamos errores de "no encontrado" vs errores de "validación"
+    const status = error.message.includes("No existe") ? 404 : 400;
+    res.status(status).json({ error: error.message });
   }
 });
 

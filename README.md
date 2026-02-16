@@ -24,7 +24,7 @@ Password: password
 Abrir http://localhost:7474
 
 
-
+//----------------
 Entrar a mongo y ver coleccion:
 docker exec -it tpo-bdd2-mongo-1 mongosh
 use edugrade
@@ -32,7 +32,14 @@ db.students.find().pretty()
 
 show collections // para ver nombre de las colecciones
 
+//---------------
+Correr script de reglas de conversion a redis
 
+ir a cd backend y correr:
+docker exec -it tpo-bdd2-backend-1 node src/scripts/seedRedis.js
+
+
+//---------------
 GIT:
 
 // SUBIR

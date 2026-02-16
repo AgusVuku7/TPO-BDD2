@@ -1,25 +1,33 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { Input, Button, Select, SelectItem } from '@heroui/react';
 
 const MateriaForm = ({ initialData, onSuccess, onCancel }) => {
-  const [materia, setMateria] = useState({ _id: '', nombre: '', nivel: '', institucion: '' });
-  const [instituciones, setInstituciones] = useState([]);
 
-  useEffect(() => {
-    // Cargar instituciones para el select
-    const fetchInstituciones = async () => {
-      const res = await api.get('/institucion');
-      setInstituciones(res.data.instituciones || []);
-    };
-    fetchInstituciones();
-
+  const [materia, setMateria] = useState(() => {
     if (initialData) {
-      setMateria({
+      return {
         ...initialData,
         institucion: initialData.institucion?._id || initialData.institucion
-      });
+      };
     }
-  }, [initialData]);
+    return { _id: '', nombre: '', nivel: '', institucion: '' };
+  });
+
+  const [instituciones, setInstituciones] = useState([]);
+  const [mensaje, setMensaje] = useState('');
+
+  useEffect(() => {
+    const fetchInstituciones = async () => {
+      try {
+        const res = await api.get('/institucion');
+        setInstituciones(res.data.instituciones || []);
+      } catch (error) {
+        console.error("Error cargando instituciones:", error);
+      }
+    };
+    fetchInstituciones();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,34 +39,58 @@ const MateriaForm = ({ initialData, onSuccess, onCancel }) => {
       }
       onSuccess();
     } catch (error) {
-      console.error("Error al guardar materia:", error);
-      alert("Error al guardar materia");
+      console.error(error);
+      setMensaje('❌ Error al procesar la materia');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h3>{initialData ? 'Editar Materia' : 'Nueva Materia'}</h3>
-      <input type="text" placeholder="Código (ej: MAT-01)" value={materia._id} disabled={!!initialData} onChange={e => setMateria({...materia, _id: e.target.value})} required />
-      <input type="text" placeholder="Nombre" value={materia.nombre} onChange={e => setMateria({...materia, nombre: e.target.value})} required />
-      <input type="text" placeholder="Nivel" value={materia.nivel} onChange={e => setMateria({...materia, nivel: e.target.value})} required />
-      
-      <label>Institución:</label>
-      <select 
-        value={materia.institucion} 
-        onChange={e => setMateria({...materia, institucion: e.target.value})}
-        required
-      >
-        <option value="">Seleccione una institución...</option>
-        {instituciones.map(inst => (
-          <option key={inst._id} value={inst._id}>{inst.nombre}</option>
-        ))}
-      </select>
-
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-        <button type="button" onClick={onCancel} className="btn-cancelar">Cancelar</button>
-        <button type="submit">Guardar</button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input 
+          label="Código" 
+          placeholder="Ej: MAT-01"
+          value={materia._id} 
+          disabled={!!initialData}
+          onChange={e => setMateria({...materia, _id: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="Nombre" 
+          value={materia.nombre} 
+          onChange={e => setMateria({...materia, nombre: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="Nivel" 
+          value={materia.nivel} 
+          onChange={e => setMateria({...materia, nivel: e.target.value})} 
+          required 
+        />
+        <Select 
+          label="Institución"
+          placeholder="Seleccione una institución"
+          selectedKeys={materia.institucion ? [materia.institucion] : []}
+          onChange={e => setMateria({...materia, institucion: e.target.value})}
+          required
+        >
+          {instituciones.map((inst) => (
+            <SelectItem key={inst._id} value={inst._id}>
+              {inst.nombre}
+            </SelectItem>
+          ))}
+        </Select>
       </div>
+      
+      <div className="flex justify-end gap-3 mt-4">
+        <Button color="danger" variant="flat" onPress={onCancel}>
+          Cancelar
+        </Button>
+        <Button color="primary" type="submit">
+          {initialData ? 'Actualizar' : 'Guardar'}
+        </Button>
+      </div>
+      {mensaje && <p className="text-center text-red-500 text-sm mt-2">{mensaje}</p>}
     </form>
   );
 };

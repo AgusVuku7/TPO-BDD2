@@ -3,6 +3,7 @@ const cors = require('cors');
 const studentRoutes = require('./api/routes/estudiante');
 const institutionRoutes = require('./api/routes/institucion');
 const materiaRoutes = require('./api/routes/materia');
+const conversionRoutes = require('./api/routes/conversion');
 
 const app = express();
 
@@ -16,5 +17,6 @@ app.use(express.json());
 app.use('/api/estudiante', studentRoutes);
 app.use('/api/institucion', institutionRoutes);
 app.use('/api/materia', materiaRoutes);
+app.use('/api/conversion', conversionRoutes);
 
 module.exports = app;

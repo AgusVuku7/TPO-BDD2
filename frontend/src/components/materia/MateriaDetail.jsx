@@ -1,19 +1,40 @@
+import { Button } from '@heroui/react';
+
 const MateriaDetail = ({ materia, onBack }) => {
   if (!materia) return null;
 
   return (
-    <div className="materia-detail">
-      <h3 style={{ borderBottom: '2px solid #3498db', paddingBottom: '10px' }}>
-        Detalles de la Materia
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
-        <p><strong>Código:</strong> {materia._id}</p>
-        <p><strong>Nombre:</strong> {materia.nombre}</p>
-        <p><strong>Nivel:</strong> {materia.nivel}</p>
-        <p><strong>Institución:</strong> {materia.institucion?.nombre || 'No asignada'}</p>
+    <div>
+      <div className="grid grid-cols-2 gap-6 p-2">
+        {/* Fila 1 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Código</span>
+          <span className="text-lg text-slate-800">{materia._id}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</span>
+          <span className="text-lg text-slate-800">{materia.nombre}</span>
+        </div>
+
+        {/* Fila 2 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nivel</span>
+          <span className="text-lg text-slate-800">{materia.nivel}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Institución</span>
+          <span className="text-lg text-slate-800">{materia.institucion?.nombre || 'No asignada'}</span>
+        </div>
       </div>
-      <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={onBack} className="btn-cancelar">Cerrar</button>
+
+      <div className="mt-8 flex justify-end">
+        <Button 
+          color="danger" 
+          variant="flat" 
+          onPress={onBack}
+        >
+          Cerrar
+        </Button>
       </div>
     </div>
   );

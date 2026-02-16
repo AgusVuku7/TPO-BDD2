@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import InstitucionForm from './InstitucionForm';
 import InstitucionDetail from './InstitucionDetail';
+import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
+import { Eye, Pencil, Plus, SearchIcon, Trash2, Building2 } from 'lucide-react';
 
 const InstitucionList = () => {
   const [instituciones, setInstituciones] = useState([]);
@@ -10,7 +12,7 @@ const InstitucionList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   
-  const [modalMode, setModalMode] = useState(null); // 'create', 'edit', 'view' o null
+  const [modalMode, setModalMode] = useState(null); 
   const [selected, setSelected] = useState(null);
 
   const load = useCallback(async (isMounted = true) => {
@@ -20,7 +22,6 @@ const InstitucionList = () => {
         params: { buscar: searchTerm, page: page, limit: 10 }
       });
       if (isMounted) {
-        // Asumimos que el backend devuelve { instituciones, pages } similar a estudiantes
         setInstituciones(res.data.instituciones);
         setTotalPages(res.data.pages);
       }
@@ -49,89 +50,115 @@ const InstitucionList = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Eliminar esta institución?')) {
-      try {
-        await api.delete(`/institucion/${id}`);
-        load();
-      } catch (error) {
-        console.error("Error al eliminar institución:", error);
-        alert("Error al eliminar");
-      }
+      await api.delete(`/institucion/${id}`);
+      load();
     }
   };
 
   return (
-    <div className="institucion-list-container">
-      {/* 1. Inicio: Buscador y Botón Nuevo */}
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <input
-            type="text"
-            placeholder="Buscar institución..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-            style={{ padding: '8px', width: '300px' }}
-          />
-          {loading && <span style={{ fontSize: '0.8rem' }}>Cargando...</span>}
-        </div>
-        <button onClick={() => handleOpenModal('create')} className="btn-nuevo">+ Añadir Institución</button>
-      </div>
-
-      {/* 2. Tabla de Datos */}
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #3498db', textAlign: 'left' }}>
-            <th>Nombre</th>
-            <th>País</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {instituciones.map(inst => (
-            <tr key={inst._id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px 0' }}>{inst.nombre}</td>
-              <td>{inst.pais}</td>
-              <td style={{ display: 'flex', gap: '8px', padding: '10px 0' }}>
-                <button 
-                  onClick={() => handleOpenModal('view', inst)}
-                  style={{ backgroundColor: '#34495e', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Ver
-                </button>
-                <button onClick={() => handleOpenModal('edit', inst)}>Editar</button>
-                <button onClick={() => handleDelete(inst._id)} style={{ color: 'red' }}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* 3. Paginación debajo */}
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '15px', alignItems: 'center' }}>
-        <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-        <span style={{ fontWeight: 'bold' }}>Página {page} de {totalPages}</span>
-        <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-      </div>
-
-      {/* 4. Modales */}
-      {modalMode && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            {modalMode === 'view' ? (
-              <InstitucionDetail 
-                institucion={selected} 
-                onBack={handleCloseModal} 
-              />
-            ) : (
-              <InstitucionForm 
-                initialData={selected} 
-                onSuccess={() => { handleCloseModal(); load(); }} 
-                onCancel={handleCloseModal} 
-              />
-            )}
+    <Card className="p-6 mt-8">
+      <CardHeader className='flex flex-row justify-between items-center'>
+        <div className="flex gap-3 items-center">
+          <Building2 className="text-blue-600" size={30} />
+          <div className="flex flex-col">
+            <p className="text-xl font-bold text-slate-800">Gestión de Instituciones</p>
+            <p className="text-small text-default-500">ABM de instituciones</p>
           </div>
         </div>
-      )}
-    </div>
+
+        <div className='flex gap-4 items-center'>
+          {loading && <Spinner variant="dots" size="sm" color="primary" />}
+          
+          <Input
+            isClearable
+            placeholder="Buscar institución..."
+            startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
+            value={searchTerm}
+            onClear={() => setSearchTerm("")}
+            onValueChange={setSearchTerm}
+            className="max-w-xs"
+          />
+          
+          <Button 
+            onPress={() => handleOpenModal('create')} 
+            color='primary'
+            className="shrink-0 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            Añadir Institución
+          </Button>
+        </div>
+      </CardHeader>
+
+      <Divider orientation="horizontal" className="my-5" />
+
+      <CardBody>
+        <Table aria-label="Tabla de Instituciones" className="shadow-none" removeWrapper>
+          <TableHeader>
+            <TableColumn className="bg-blue-50 text-slate-800">NOMBRE</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800">PAÍS</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800 text-center">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent={"No hay instituciones registradas."}>
+            {instituciones.map((inst) => (
+              <TableRow key={inst._id} className="border-b border-divider">
+                <TableCell className="py-4">{inst.nombre}</TableCell>
+                <TableCell>{inst.pais}</TableCell>
+                <TableCell>
+                  <div className="flex justify-center gap-2">
+                    <Button size="sm" color='default' variant="light" isIconOnly onPress={() => handleOpenModal('view', inst)}><Eye className="w-4 h-4" /></Button>
+                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleOpenModal('edit', inst)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDelete(inst._id)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <div className="flex justify-center mt-8">
+          <Pagination
+            isCompact
+            showControls
+            color="primary"
+            page={page}
+            total={totalPages}
+            onChange={setPage}
+          />
+        </div>
+
+        <Modal
+          isOpen={!!modalMode} 
+          onOpenChange={handleCloseModal}
+          size="2xl"
+          backdrop="blur"
+          scrollBehavior="inside"
+        >
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1 text-2xl font-bold text-slate-800 p-6">
+                  {modalMode === 'view' ? 'Detalles de la Institución' : 
+                  modalMode === 'edit' ? 'Modificar Institución' : 'Nueva Institución'}
+                  <Divider orientation="horizontal" className="my-2 mt-4" />
+                </ModalHeader>
+                <ModalBody className="pb-4">
+                  {modalMode === 'view' ? (
+                    <InstitucionDetail institucion={selected} onBack={onClose} />
+                  ) : (
+                    <InstitucionForm 
+                      initialData={selected} 
+                      onSuccess={() => { onClose(); load(); }} 
+                      onCancel={onClose} 
+                    />
+                  )}
+                </ModalBody>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
+      </CardBody>
+    </Card>
   );
 };
 

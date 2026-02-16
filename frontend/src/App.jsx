@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Tabs, Tab, Divider, Card, CardHeader, CardBody } from "@heroui/react";
+import { Tabs, Tab, Divider } from "@heroui/react";
 import EstudianteList from './components/estudiante/EstudianteList'
 import InstitucionList from './components/institucion/InstitucionList'
 import MateriaList from './components/materia/MateriaList'
-import { Divide } from 'lucide-react';
+import GradeConversion from './components/calificaciones/GradeConversion';
 
 function App() {
   const [view, setView] = useState('students');
@@ -29,6 +29,7 @@ function App() {
           <Tab key="students" title="Estudiantes" />
           <Tab key="institutions" title="Instituciones" />
           <Tab key="subjects" title="Materias" />
+          <Tab key="conversion" title="Conversor" />
         </Tabs>
       </header>
 
@@ -40,26 +41,20 @@ function App() {
         )}
         
         {view === 'institutions' && (
-          <section>
-            <h2 className="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-blue-500 inline-block">
-              Gestión de Instituciones
-            </h2>
-            <InstitucionList />
-          </section>
+          <InstitucionList />
         )}
 
         {view === 'subjects' && (
-          <section>
-            <h2 className="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-blue-500 inline-block">
-              Gestión de Materias
-            </h2>
-            <MateriaList />
-          </section>
+          <MateriaList />
+        )}
+
+        {view === 'conversion' && (
+          <GradeConversion />
         )}
       </main>
       
-      <footer className="footer">
-        <p>TPO Persistencia Políglota - Sistemas de Calificación: UK, US, DE, AR</p>
+      <footer className='mt-10 text-center text-sm text-slate-400'>
+        <p>TPO Persistencia Políglota - Sistema Nacional de Calificaciones Multimodelo</p>
       </footer>
     </div>
   )

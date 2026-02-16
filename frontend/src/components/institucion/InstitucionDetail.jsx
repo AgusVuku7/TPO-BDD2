@@ -1,43 +1,46 @@
+import { Button } from '@heroui/react';
+
 const InstitucionDetail = ({ institucion, onBack }) => {
   if (!institucion) return null;
 
   return (
-    <div className="institucion-detail">
-      <h3 style={{ borderBottom: '2px solid #3498db', paddingBottom: '10px' }}>
-        Detalles de la Institución
-      </h3>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
-        <div>
-          <p><strong>ID/Código:</strong></p>
-          <p>{institucion._id}</p>
+    <div>
+      <div className="grid grid-cols-2 gap-6 p-2">
+        {/* Fila 1 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ID/Código</span>
+          <span className="text-lg text-slate-800">{institucion._id}</span>
         </div>
-        <div>
-          <p><strong>Nombre:</strong></p>
-          <p>{institucion.nombre}</p>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</span>
+          <span className="text-lg text-slate-800">{institucion.nombre}</span>
         </div>
-        <div>
-          <p><strong>País:</strong></p>
-          <p>{institucion.pais}</p>
+
+        {/* Fila 2 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">País</span>
+          <span className="text-lg text-slate-800">{institucion.pais}</span>
         </div>
-        <div>
-          <p><strong>Región:</strong></p>
-          <p>{institucion.region || 'N/A'}</p>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Región</span>
+          <span className="text-lg text-slate-800">{institucion.region || 'N/A'}</span>
         </div>
-        <div style={{ gridColumn: 'span 2' }}>
-          <p><strong>Sistema Educativo:</strong></p>
-          <p>{institucion.sistema_educativo}</p>
+
+        {/* Fila 3 - Full Width */}
+        <div className="flex flex-col col-span-2">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Sistema Educativo</span>
+          <span className="text-lg text-slate-800">{institucion.sistema_educativo}</span>
         </div>
       </div>
 
-      <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button 
-          onClick={onBack} 
-          className="btn-cancelar"
-          style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}
+      <div className="mt-8 flex justify-end">
+        <Button 
+          color="danger" 
+          variant="flat" 
+          onPress={onBack}
         >
           Cerrar
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,43 +1,58 @@
 import { useState } from 'react'
-import EstudianteForm from './components/estudiante/EstudianteForm'
+import { Tabs, Tab, Divider, Card, CardHeader, CardBody } from "@heroui/react";
 import EstudianteList from './components/estudiante/EstudianteList'
 import InstitucionList from './components/institucion/InstitucionList'
-import InstitucionForm from './components/institucion/InstitucionForm'
 import MateriaList from './components/materia/MateriaList'
-import MateriaForm from './components/materia/MateriaForm'
+import { Divide } from 'lucide-react';
 
 function App() {
   const [view, setView] = useState('students');
 
   return (
-    <div className="app-container">
-      <header className="main-header">
-        <h1>EduGrade Global</h1>
-        <nav>
-          <button onClick={() => setView('students')} className={view === 'students' ? 'active' : ''}>Estudiantes</button>
-          <button onClick={() => setView('institutions')} className={view === 'institutions' ? 'active' : ''}>Instituciones</button>
-          <button onClick={() => setView('subjects')} className={view === 'subjects' ? 'active' : ''}>Materias</button>
-        </nav>
+    <div className="container max-w-6xl mx-auto">
+      <header className="flex flex-row justify-between items-center py-4 px-10">
+        {/* Título a la izquierda */}
+        <h1 className="text-3xl font-bold text-slate-800">
+          EduGrade Global
+        </h1>
+
+        {/* Tabs a la derecha */}
+        <Tabs 
+          aria-label="Opciones de navegación" 
+          selectedKey={view} 
+          onSelectionChange={setView}
+          color="primary"
+          variant="solid"
+          radius="full"
+          classNames={{ tabList: "gap-6", tab: "p-5" }}
+        >
+          <Tab key="students" title="Estudiantes" />
+          <Tab key="institutions" title="Instituciones" />
+          <Tab key="subjects" title="Materias" />
+        </Tabs>
       </header>
 
-      <main className="content">
+      <Divider orientation="horizontal" className="mx-4" />
+
+      <main className="max-w-6xl mx-auto px-4">
         {view === 'students' && (
-          <section>
-            <h2>Gestión de Estudiantes</h2>
-            <EstudianteList />
-          </section>
+          <EstudianteList />
         )}
         
         {view === 'institutions' && (
           <section>
-            <h2>Gestión de Instituciones</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-blue-500 inline-block">
+              Gestión de Instituciones
+            </h2>
             <InstitucionList />
           </section>
         )}
 
         {view === 'subjects' && (
           <section>
-            <h2>Gestión de Materias</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-4 border-b-2 border-blue-500 inline-block">
+              Gestión de Materias
+            </h2>
             <MateriaList />
           </section>
         )}

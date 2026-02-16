@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../services/api';
+import { Input, Button } from '@heroui/react'; // Importación de componentes HeroUI
 
 const EstudianteForm = ({ initialData, onSuccess, onCancel }) => {
   const initialForm = { _id: '', nombre: '', apellido: '', documento: '', mail: '', pais: '' };
@@ -8,16 +9,13 @@ const EstudianteForm = ({ initialData, onSuccess, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMensaje('Enviando...');
     try {
       if (initialData) {
-        // MODO EDICIÓN
         await api.put(`/estudiante/${estudiante._id}`, estudiante);
       } else {
-        // MODO CREACIÓN
         await api.post('/estudiante', estudiante);
       }
-      onSuccess(); // Cierra el modal y refresca la lista
+      onSuccess(); 
     } catch (error) {
       console.error(error);
       setMensaje('❌ Error al procesar la solicitud');
@@ -25,27 +23,59 @@ const EstudianteForm = ({ initialData, onSuccess, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h3>{initialData ? 'Editar Estudiante' : 'Registrar Nuevo Estudiante'}</h3>
-      <input 
-        type="text" 
-        placeholder="Legajo" 
-        value={estudiante._id} 
-        disabled={!!initialData} // El Legajo no se edita
-        onChange={e => setEstudiante({...estudiante, _id: e.target.value})} 
-        required 
-      />
-      <input type="text" placeholder="Nombre" value={estudiante.nombre} onChange={e => setEstudiante({...estudiante, nombre: e.target.value})} required />
-      <input type="text" placeholder="Apellido" value={estudiante.apellido} onChange={e => setEstudiante({...estudiante, apellido: e.target.value})} required />
-      <input type="text" placeholder="Documento" value={estudiante.documento} onChange={e => setEstudiante({...estudiante, documento: e.target.value})} required />
-      <input type="email" placeholder="Email" value={estudiante.mail} onChange={e => setEstudiante({...estudiante, mail: e.target.value})} required />
-      <input type="text" placeholder="País" value={estudiante.pais} onChange={e => setEstudiante({...estudiante, pais: e.target.value})} required />
-      
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button type="button" onClick={onCancel} className="btn-cancelar">Cancelar</button>
-        <button type="submit" style={{ marginLeft: '10px' }}>{initialData ? 'Actualizar' : 'Guardar'}</button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input 
+          label="Legajo" 
+          placeholder="Ej: EST-123"
+          value={estudiante._id} 
+          disabled={!!initialData}
+          onChange={e => setEstudiante({...estudiante, _id: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="Documento" 
+          value={estudiante.documento} 
+          onChange={e => setEstudiante({...estudiante, documento: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="Nombre" 
+          value={estudiante.nombre} 
+          onChange={e => setEstudiante({...estudiante, nombre: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="Apellido" 
+          value={estudiante.apellido} 
+          onChange={e => setEstudiante({...estudiante, apellido: e.target.value})} 
+          required 
+        />
+        <Input 
+          type="email" 
+          label="Email" 
+          value={estudiante.mail} 
+          onChange={e => setEstudiante({...estudiante, mail: e.target.value})} 
+          required 
+        />
+        <Input 
+          label="País" 
+          value={estudiante.pais} 
+          onChange={e => setEstudiante({...estudiante, pais: e.target.value})} 
+          required 
+        />
       </div>
-      <p>{mensaje}</p>
+      
+      <div className="flex justify-end gap-3 mt-4">
+        {/* Botón de cerrar/cancelar en color danger */}
+        <Button color="danger" variant="flat" onPress={onCancel}>
+          Cancelar
+        </Button>
+        <Button color="primary" type="submit">
+          {initialData ? 'Actualizar' : 'Guardar'}
+        </Button>
+      </div>
+      {mensaje && <p className="text-center text-red-500 text-sm mt-2">{mensaje}</p>}
     </form>
   );
 };

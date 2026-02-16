@@ -1,47 +1,51 @@
+import { Button } from '@heroui/react';
+
 const EstudianteDetail = ({ student, onBack }) => {
   if (!student) return null;
 
   return (
-    <div className="estudiante-detail">
-      <h3 style={{ borderBottom: '2px solid #3498db', paddingBottom: '10px' }}>
-        Información del Estudiante
-      </h3>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-        <div>
-          <p><strong>Legajo:</strong></p>
-          <p>{student._id}</p>
+    <div>
+      <div className="grid grid-cols-2 gap-6 p-2">
+        {/* Fila 1 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Legajo</span>
+          <span className="text-lg text-slate-800">{student._id}</span>
         </div>
-        <div>
-          <p><strong>Documento:</strong></p>
-          <p>{student.documento}</p>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Documento</span>
+          <span className="text-lg text-slate-800">{student.documento}</span>
         </div>
-        <div>
-          <p><strong>Nombre:</strong></p>
-          <p>{student.nombre}</p>
+
+        {/* Fila 2 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</span>
+          <span className="text-lg text-slate-800">{student.nombre}</span>
         </div>
-        <div>
-          <p><strong>Apellido:</strong></p>
-          <p>{student.apellido}</p>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Apellido</span>
+          <span className="text-lg text-slate-800">{student.apellido}</span>
         </div>
-        <div>
-          <p><strong>Email:</strong></p>
-          <p>{student.mail}</p>
+
+        {/* Fila 3 */}
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email</span>
+          <span className="text-lg text-slate-800">{student.mail}</span>
         </div>
-        <div>
-          <p><strong>País:</strong></p>
-          <p>{student.pais}</p>
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">País</span>
+          <span className="text-lg text-slate-800">{student.pais}</span>
         </div>
       </div>
 
-      <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end' }}>
-        <button 
-          onClick={onBack} 
-          className="btn-cancelar"
-          style={{ backgroundColor: '#95a5a6', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer' }}
+      <div className="mt-8 flex justify-end">
+        {/* Botón de cerrar en color danger solicitado */}
+        <Button 
+          color="danger" 
+          variant="flat" 
+          onPress={onBack}
         >
           Cerrar
-        </button>
+        </Button>
       </div>
     </div>
   );

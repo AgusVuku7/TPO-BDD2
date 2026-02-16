@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import EstudianteForm from './EstudianteForm';
 import EstudianteDetail from './EstudianteDetail';
+import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
+import { Divide, Eye, Pencil, Plus, SearchIcon, Trash2 } from 'lucide-react';
 
 const EstudianteList = () => {
   const [students, setStudents] = useState([]);
@@ -55,75 +57,106 @@ const EstudianteList = () => {
   };
 
   return (
-    <div className="student-list-container">
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input
-            type="text"
-            placeholder="Buscar..."
+    <Card className="p-6 mt-8">
+      <CardHeader className='flex flex-row justify-between items-center'>
+        {/* Lado Izquierdo: Título */}
+        <div className='text-3xl font-bold text-slate-800'>
+          Gestión de Estudiantes
+        </div>
+
+        {/* Lado Derecho: Spinner + Buscador + Botón */}
+        <div className='flex gap-4 items-center'>
+          {/* Spinner a la izquierda del buscador, condicionado por 'loading' */}
+          {loading && <Spinner variant="dots" size="sm" color="primary" />}
+          
+          <Input
+            isClearable
+            placeholder="Buscar por nombre..."
+            startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-            style={{ padding: '8px', width: '300px' }}
+            onClear={() => setSearchTerm("")}
+            onValueChange={setSearchTerm}
+            className="max-w-xs" // Limitamos el ancho para que no empuje el botón
           />
-          {loading && <span>Cargando...</span>}
+          
+          <Button 
+            onPress={() => handleOpenModal('create')} 
+            color='primary'
+            className="shrink-0 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            Añadir Estudiante
+          </Button>
         </div>
-        <button onClick={() => handleOpenModal('create')} className="btn-nuevo">+ Añadir Estudiante</button>
-      </div>
+      </CardHeader>
+      <Divider orientation="horizontal" className="my-5" />
+      <CardBody>
+        <Table aria-label="Tabla de Estudiantes" className="shadow-none" removeWrapper>
+          <TableHeader>
+            <TableColumn className="bg-blue-50 text-slate-800">NOMBRE Y APELLIDO</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800">PAÍS</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800 text-center">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent={"No hay estudiantes registrados."}>
+            {students.map((s) => (
+              <TableRow key={s._id} className="border-b border-divider">
+                <TableCell className="py-4">{s.nombre} {s.apellido}</TableCell>
+                <TableCell>{s.pais}</TableCell>
+                <TableCell>
+                  <div className="flex justify-center gap-2">
+                    <Button size="sm" color='default' variant="light" isIconOnly onPress={() => handleOpenModal('view', s)}><Eye className="w-4 h-4" /></Button>
+                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleOpenModal('edit', s)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDelete(s._id)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #3498db', textAlign: 'left' }}>
-            <th>Nombre y Apellido</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {students.map(s => (
-            <tr key={s._id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px 0' }}>{s.nombre} {s.apellido}</td>
-              <td style={{ display: 'flex', gap: '8px', padding: '10px 0' }}>
-                {/* BOTÓN VER AÑADIDO */}
-                <button 
-                  onClick={() => handleOpenModal('view', s)}
-                  style={{ backgroundColor: '#34495e', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Ver
-                </button>
-                <button onClick={() => handleOpenModal('edit', s)}>Editar</button>
-                <button onClick={() => handleDelete(s._id)} style={{ color: 'red' }}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        <div className="flex justify-center mt-8">
+          <Pagination
+            isCompact
+            showControls
+            color="primary"
+            page={page}
+            total={totalPages}
+            onChange={setPage} // Actualiza el estado y dispara el useEffect
+          />
+        </div>
 
-      {/* Paginación */}
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-        <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-        <span style={{ fontWeight: 'bold' }}>Página {page} de {totalPages}</span>
-        <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-      </div>
-
-      {/* MODAL DINÁMICO */}
-      {modalMode && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            {modalMode === 'view' ? (
-              <EstudianteDetail 
-                student={selectedStudent} 
-                onBack={handleCloseModal} 
-              />
-            ) : (
-              <EstudianteForm 
-                initialData={selectedStudent} 
-                onSuccess={() => { handleCloseModal(); load(); }} 
-                onCancel={handleCloseModal} 
-              />
+        <Modal
+          isOpen={!!modalMode} 
+          onOpenChange={handleCloseModal}
+          size="2xl"
+          backdrop="blur"
+          scrollBehavior="inside"
+        >
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1 text-2xl font-bold text-slate-800 p-6">
+                  {modalMode === 'view' ? 'Información del Estudiante' : 
+                  modalMode === 'edit' ? 'Modificar Registro' : 'Nuevo Registro'}
+                  <Divider orientation="horizontal" className="my-2 mt-4" />
+                </ModalHeader>
+                <ModalBody className="pb-4">
+                  {modalMode === 'view' ? (
+                    <EstudianteDetail student={selectedStudent} onBack={onClose} />
+                  ) : (
+                    <EstudianteForm 
+                      initialData={selectedStudent} 
+                      onSuccess={() => { onClose(); load(); }} 
+                      onCancel={onClose} 
+                    />
+                  )}
+                </ModalBody>
+              </>
             )}
-          </div>
-        </div>
-      )}
-    </div>
+          </ModalContent>
+        </Modal>
+      </CardBody>
+    </Card>
   );
 };
 

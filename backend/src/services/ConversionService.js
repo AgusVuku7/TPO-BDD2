@@ -1,46 +1,40 @@
-const { getRedisClient } = require('../utils/DatabaseManager');
+const repositorioReglas = require('../repositories/repositorioReglas');
 
 class ConversionService {
-  /**
-   * Guarda una regla versionada en Redis.
-   * La clave sigue el patrón regla:ORIGEN:DESTINO:VERSION
-   */
+  constructor() {
+    this.localCache = {}; // Mantenemos el cache local para velocidad extrema
+  }
+
   async guardarRegla(regla) {
-    const client = getRedisClient();
     const key = `regla:${regla.origen}:${regla.destino}:${regla.version}`;
+    const latestKey = `regla:${regla.origen}:${regla.destino}:latest`;
     
-    // Guardamos el objeto como un string JSON
-    await client.set(key, JSON.stringify(regla));
+    // Usamos el repositorio en lugar de getRedisClient directamente
+    await repositorioReglas.set(key, regla);
+    await repositorioReglas.set(latestKey, regla);
     
-    // También actualizamos el puntero a la versión más reciente
-    await client.set(`regla:${regla.origen}:${regla.destino}:latest`, JSON.stringify(regla));
-    
+    delete this.localCache[key];
+    delete this.localCache[latestKey];
     return key;
   }
 
-  /**
-   * Aplica la conversión buscando en los rangos de Redis
-   */
   async convertirNota(origen, destino, notaOriginal, version = 'latest') {
-    const client = getRedisClient();
     const key = `regla:${origen}:${destino}:${version}`;
-    
-    const data = await client.get(key);
-    if (!data) throw new Error("No se encontró una regla de conversión activa.");
+    let regla = this.localCache[key];
 
-    const regla = JSON.parse(data);
+    if (!regla) {
+      regla = await repositorioReglas.get(key); // Pedimos al repo
+      if (!regla) throw new Error("Regla no encontrada");
+      this.localCache[key] = regla;
+    }
+
     const notaNum = parseFloat(notaOriginal);
+    const mapeo = regla.mapping.find(m => notaNum >= m.min && notaNum <= m.max); // Tu lógica de rangos
 
-    // Lógica de mapeo: buscamos en qué rango cae la nota según tu esquema
-    const mapeo = regla.mapping.find(m => notaNum >= m.min && notaNum <= m.max);
-    
     return mapeo ? {
       resultado: mapeo.result,
       label: mapeo.label,
-      metadata: {
-        version_regla: regla.version,
-        fecha_regla: regla.fecha
-      }
+      metadata: { version: regla.version, origen: 'cache-local' }
     } : { resultado: "F", label: "Fail" };
   }
 }

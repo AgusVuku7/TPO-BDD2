@@ -13,6 +13,7 @@ class OnboardingService {
       await GraphRepository.crearEstudiante(
         estudianteMongo._id,       //Pasamos el ID
         estudianteMongo.nombre,    //Pasamos el Nombre
+        estudianteMongo.apellido,  //Pasamos el Apellido
         estudianteMongo.mail       //Pasamos el Mail
       );
     } catch (error) {

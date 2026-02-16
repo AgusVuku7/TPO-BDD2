@@ -2,7 +2,7 @@ const { getNeo4jDriver } = require('../utils/DatabaseManager');
 
 class GraphRepository {
     //Nodo Estudiante
-    async crearEstudiante(mongoId, nombre, mail) {
+    async crearEstudiante(mongoId, nombre, apellido, mail) {
         //Obtenemos el driver y abrimos sesion
         const driver = getNeo4jDriver();
         const session = driver.session();
@@ -12,13 +12,13 @@ class GraphRepository {
         await session.run(
             `
             MERGE (e:Estudiante {id: $id})
-            ON CREATE SET e.nombre = $nombre, e.mail = $mail
+            ON CREATE SET e.nombre = $nombre, e.apellido = $apellido, e.mail = $mail
             RETURN e
             `,
-            { id: mongoId.toString(), nombre, mail }
+            { id: mongoId.toString(), nombre, apellido, mail }
             );
             
-        console.log(`🟢 Nodo creado en Neo4j: ${mail}`);
+        console.log(`🟢 Nodo creado en Neo4j: ${nombre}`);
 
         } catch (error) {
         console.error('🔴 Error creando estudiante en grafo:', error);

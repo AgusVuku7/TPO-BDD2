@@ -3,7 +3,7 @@ import api from '../../services/api';
 import EstudianteForm from './EstudianteForm';
 import EstudianteDetail from './EstudianteDetail';
 import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
-import { Divide, Eye, Pencil, Plus, SearchIcon, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, SearchIcon, Trash2, Users } from 'lucide-react';
 
 const EstudianteList = () => {
   const [students, setStudents] = useState([]);
@@ -60,8 +60,12 @@ const EstudianteList = () => {
     <Card className="p-6 mt-8">
       <CardHeader className='flex flex-row justify-between items-center'>
         {/* Lado Izquierdo: Título */}
-        <div className='text-3xl font-bold text-slate-800'>
-          Gestión de Estudiantes
+        <div className="flex gap-3 items-center">
+          <Users className="text-blue-600" size={30} />
+          <div className="flex flex-col">
+            <p className="text-xl font-bold text-slate-800">Gestión de Estudiantes</p>
+            <p className="text-small text-default-500">ABM de estudiantes</p>
+          </div>
         </div>
 
         {/* Lado Derecho: Spinner + Buscador + Botón */}

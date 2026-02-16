@@ -27,10 +27,3 @@ body {
 * {
   box-sizing: border-box;
 }
-
-.footer {
-  margin-top: 40px;
-  text-align: center;
-  font-size: 0.8rem;
-  color: #7f8c8d;
-}

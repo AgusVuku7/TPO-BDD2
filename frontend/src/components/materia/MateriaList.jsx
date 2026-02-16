@@ -1,83 +1,166 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import MateriaForm from './MateriaForm';
-import MateriaDetail from './MateriaDetail'; // Debes crearlo similar a EstudianteDetail
+import MateriaDetail from './MateriaDetail';
+import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
+import { Eye, Pencil, Plus, SearchIcon, Trash2, LibraryBig } from 'lucide-react';
 
 const MateriaList = () => {
   const [materias, setMaterias] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  
   const [modalMode, setModalMode] = useState(null); 
   const [selected, setSelected] = useState(null);
 
-  const load = useCallback(async (active = true) => {
+  const load = useCallback(async (isMounted = true) => {
+    setLoading(true);
     try {
-      const res = await api.get('/materia', { params: { buscar: searchTerm, page, limit: 10 } });
-      if (active) {
+      const res = await api.get('/materia', {
+        params: { buscar: searchTerm, page: page, limit: 10 }
+      });
+      if (isMounted) {
         setMaterias(res.data.materias);
         setTotalPages(res.data.pages);
       }
-    } catch (e) { console.error(e); }
+    } catch (error) {
+      console.error("Error cargando materias:", error);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
   }, [page, searchTerm]);
 
   useEffect(() => {
-    let active = true;
-    load(active);
-    return () => { active = false; };
+    let isMounted = true;
+    load(isMounted);
+    return () => { isMounted = false; };
   }, [load]);
 
+  const handleOpenModal = (mode, item = null) => {
+    setSelected(item);
+    setModalMode(mode);
+  };
+
+  const handleCloseModal = () => {
+    setModalMode(null);
+    setSelected(null);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Eliminar esta materia?')) {
+      await api.delete(`/materia/${id}`);
+      load();
+    }
+  };
+
   return (
-    <div className="list-container">
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between' }}>
-        <input type="text" placeholder="Buscar materia..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
-        <button onClick={() => setModalMode('create')} className="btn-nuevo">+ Añadir Materia</button>
-      </div>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #3498db', textAlign: 'left' }}>
-            <th>Nombre</th>
-            <th>Nivel</th>
-            <th>Institución</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {materias.map(m => (
-            <tr key={m._id} style={{ borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px 0' }}>{m.nombre}</td>
-              <td>{m.nivel}</td>
-              <td>{m.institucion?.nombre || 'N/A'}</td>
-              <td style={{ display: 'flex', gap: '8px', padding: '10px 0' }}>
-                <button onClick={() => { setSelected(m); setModalMode('view'); }}>Ver</button>
-                <button onClick={() => { setSelected(m); setModalMode('edit'); }}>Editar</button>
-                <button onClick={async () => { if(window.confirm('¿Eliminar?')) { await api.delete(`/materia/${m._id}`); load(); } }} style={{ color: 'red' }}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Paginación */}
-      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
-        <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Anterior</button>
-        <span style={{ fontWeight: 'bold' }}>Página {page} de {totalPages}</span>
-        <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Siguiente</button>
-      </div>
-
-      {modalMode && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            {modalMode === 'view' ? (
-              <MateriaDetail materia={selected} onBack={() => setModalMode(null)} />
-            ) : (
-              <MateriaForm initialData={selected} onSuccess={() => { setModalMode(null); load(); }} onCancel={() => setModalMode(null)} />
-            )}
+    <Card className="p-6 mt-8">
+      <CardHeader className='flex flex-row justify-between items-center'>
+        <div className="flex gap-3 items-center">
+          <LibraryBig className="text-blue-600" size={30} />
+          <div className="flex flex-col">
+            <p className="text-xl font-bold text-slate-800">Gestión de Materias</p>
+            <p className="text-small text-default-500">Administración de currícula</p>
           </div>
         </div>
-      )}
-    </div>
+
+        <div className='flex gap-4 items-center'>
+          {loading && <Spinner variant="dots" size="sm" color="primary" />}
+          
+          <Input
+            isClearable
+            placeholder="Buscar materia..."
+            startContent={<SearchIcon className="w-4 h-4 text-default-400" />}
+            value={searchTerm}
+            onClear={() => setSearchTerm("")}
+            onValueChange={setSearchTerm}
+            className="max-w-xs"
+          />
+          
+          <Button 
+            onPress={() => handleOpenModal('create')} 
+            color='primary'
+            className="shrink-0 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            Añadir Materia
+          </Button>
+        </div>
+      </CardHeader>
+
+      <Divider orientation="horizontal" className="my-5" />
+
+      <CardBody>
+        <Table aria-label="Tabla de Materias" className="shadow-none" removeWrapper>
+          <TableHeader>
+            <TableColumn className="bg-blue-50 text-slate-800">NOMBRE</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800">NIVEL</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800">INSTITUCIÓN</TableColumn>
+            <TableColumn className="bg-blue-50 text-slate-800 text-center">ACCIONES</TableColumn>
+          </TableHeader>
+          <TableBody emptyContent={"No hay materias registradas."}>
+            {materias.map((m) => (
+              <TableRow key={m._id} className="border-b border-divider">
+                <TableCell className="py-4 font-medium">{m.nombre}</TableCell>
+                <TableCell>{m.nivel}</TableCell>
+                <TableCell>{m.institucion?.nombre || 'N/A'}</TableCell>
+                <TableCell>
+                  <div className="flex justify-center gap-2">
+                    <Button size="sm" color='default' variant="light" isIconOnly onPress={() => handleOpenModal('view', m)}><Eye className="w-4 h-4" /></Button>
+                    <Button size="sm" color="primary" variant="light" isIconOnly onPress={() => handleOpenModal('edit', m)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="sm" color="danger" variant="light" isIconOnly onPress={() => handleDelete(m._id)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <div className="flex justify-center mt-8">
+          <Pagination
+            isCompact
+            showControls
+            color="primary"
+            page={page}
+            total={totalPages}
+            onChange={setPage}
+          />
+        </div>
+
+        <Modal
+          isOpen={!!modalMode} 
+          onOpenChange={handleCloseModal}
+          size="2xl"
+          backdrop="blur"
+          scrollBehavior="inside"
+        >
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1 text-2xl font-bold text-slate-800 p-6">
+                  {modalMode === 'view' ? 'Información de la Materia' : 
+                  modalMode === 'edit' ? 'Editar Materia' : 'Nueva Materia'}
+                  <Divider orientation="horizontal" className="my-2 mt-4" />
+                </ModalHeader>
+                <ModalBody className="pb-4">
+                  {modalMode === 'view' ? (
+                    <MateriaDetail materia={selected} onBack={onClose} />
+                  ) : (
+                    <MateriaForm 
+                      initialData={selected} 
+                      onSuccess={() => { onClose(); load(); }} 
+                      onCancel={onClose} 
+                    />
+                  )}
+                </ModalBody>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
+      </CardBody>
+    </Card>
   );
 };
 

@@ -15,7 +15,7 @@ class GraphRepository {
             ON CREATE SET e.nombre = $nombre, e.mail = $mail
             RETURN e
             `,
-            { id: mongoId.toString(), nombre, email }
+            { id: mongoId.toString(), nombre, mail }
             );
             
         console.log(`🟢 Nodo creado en Neo4j: ${mail}`);

@@ -2,7 +2,7 @@ const { getNeo4jDriver } = require('../utils/DatabaseManager');
 
 class GraphRepository {
     //Nodo Estudiante
-    async crearEstudiante(mongoId, nombre, apellido, mail) {
+    async crearEstudiante(mongoId, nombre) {
         //Obtenemos el driver y abrimos sesion
         const driver = getNeo4jDriver();
         const session = driver.session();
@@ -12,16 +12,16 @@ class GraphRepository {
         await session.run(
             `
             MERGE (e:Estudiante {id: $id})
-            ON CREATE SET e.nombre = $nombre, e.apellido = $apellido, e.mail = $mail
+            ON CREATE SET e.nombre = $nombre
             RETURN e
             `,
-            { id: mongoId.toString(), nombre, apellido, mail }
+            { id: mongoId.toString(), nombre }
             );
             
         console.log(`🟢 Nodo creado en Neo4j: ${nombre}`);
 
         } catch (error) {
-        console.error('🔴 Error creando estudiante en grafo:', error);
+        console.error('🔴 Error creando el nodo del estudiante en el grafo:', error);
         throw error; //Lanzamos el error para que el backend se entere
         } finally {
         //Cerramos sesion
@@ -149,6 +149,64 @@ class GraphRepository {
             throw error; //Lanzamos el error para que el backend se entere
         } finally {
             //Cerramos sesion
+            await session.close();
+        }
+    }
+
+    //Generamos una correlatividad entre dos materias
+    async agregarCorrelatividad(idMateria, idCorrelativa) {
+        //Obtenemos el driver y abrimos sesion
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+
+        try {
+            //Ejecutamos la query
+            await session.run(
+                `
+                MATCH (m1:Materia {id: $idMateria}), (m2:Materia {id: $idCorrelativa})
+                MERGE (m1)-[r:REQUIERE]->(m2)
+                RETURN type(r)
+                `,
+                //Pasamos los IDs a Strings ya que en neo4j se guardan en ese formato
+                {
+                    idMateria: idMateria.toString(),
+                    idCorrelativa: idCorrelativa.toString()
+                }
+            );
+            
+            console.log(`🟢 Relacion creada en Neo4j: ${idMateria} necesita tener aprobada previamente ${idCorrelativa}`);
+
+        } catch (error) {
+            console.error('🔴 Error creando correlatividad en grafo:', error);
+            throw error; //Lanzamos el error para que el backend se entere
+        } finally {
+            //Cerramos sesion
+            await session.close();
+        }
+    }
+
+    // Obtener correlativas (Qué materias necesito aprobar antes)
+    async obtenerCorrelativas(materiaId) {
+        //Obtenemos el driver y abrimos sesion
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+
+        try {
+            const result = await session.run(
+                `
+                MATCH (m:Materia {id: $id})-[:REQUIERE]->(requisito:Materia)
+                RETURN requisito
+                `,
+                { id: materiaId.toString() }
+            );
+
+            //Mapeamos los resultados para devolver un array limpio de objetos
+            return result.records.map(record => record.get('requisito').properties);
+
+        } catch (error) {
+            console.error('🔴 Error buscando correlativas:', error);
+            throw error;
+        } finally {
             await session.close();
         }
     }

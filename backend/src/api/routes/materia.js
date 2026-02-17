@@ -56,4 +56,27 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+//implementamos la correlativad
+router.post('/:id/correlativas', async (req, res) => {
+  try {
+    const { idCorrelativa } = req.body; // Obtenemos el idCorrelativa del cuerpo de la solicitud
+    
+    //Llamo al servicio con los IDs sueltos
+    const resultado = await OnboardingService.agregarCorrelatividad(req.params.id, idCorrelativa);
+    res.status(201).json(resultado); //'201' significa "created", indicando que se creo el recurso
+  } catch (error) {
+    res.status(400).json({ error: error.message }); //si falla, enviamos un error '400' (ej. si no existe la materia)
+  }
+});
+
+//Mostramos las correlativas a una materia
+router.get('/:id/correlativas', async (req, res) => {
+  try {
+    const correlativas = await OnboardingService.obtenerCorrelativas(req.params.id);
+    res.json(correlativas);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

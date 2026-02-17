@@ -5,9 +5,17 @@ import InstitucionList from './components/institucion/InstitucionList'
 import MateriaList from './components/materia/MateriaList'
 import GradeConversion from './components/calificaciones/GradeConversion';
 import RuleManager from './components/calificaciones/RuleManager';
+import MateriaDetail from './components/materia/MateriaDetail'
 
 function App() {
   const [view, setView] = useState('students');
+  //Estado para saber si estamos viendo el detalle de una materia
+  const [selectedMateriaId, setSelectedMateriaId] = useState(null);
+
+  // Función para volver a la lista
+  const handleBackToList = () => {
+    setSelectedMateriaId(null);
+  };
 
   return (
     <div className="container max-w-6xl mx-auto">
@@ -47,9 +55,12 @@ function App() {
         )}
 
         {view === 'subjects' && (
-          <div>
-            <MateriaList />
-            <h2 className="text-xl font-semibold p-4">Faltan equivalencias y correlatividades (Neo)</h2>
+          <div className="py-4">
+            {!selectedMateriaId ? (
+              <MateriaList onSelecMateria={(id) => setSelectedMateriaId(id)} />
+            ) : (
+              <MateriaDetail id={selectedMateriaId} onBack={handleBackToList} />
+            )}
           </div>
         )}
 

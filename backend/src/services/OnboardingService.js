@@ -13,8 +13,6 @@ class OnboardingService {
       await GraphRepository.crearEstudiante(
         estudianteMongo._id,       //Pasamos el ID
         estudianteMongo.nombre,    //Pasamos el Nombre
-        estudianteMongo.apellido,  //Pasamos el Apellido
-        estudianteMongo.mail       //Pasamos el Mail
       );
     } catch (error) {
       console.error('⚠️ Error sincronizando estudiante con Neo4j:', error.message);
@@ -70,6 +68,40 @@ class OnboardingService {
 
     return materiaMongo;
   }
+
+  async agregarCorrelatividad(idMateria, idCorrelativa) {
+    //Primero verificamos que las materias existan en mongodb
+    const [materia, correlativa] = await Promise.all([ //Usamos 'Promise.all' para ejecutar las consultas en paralelo
+      SubjectRepository.findById(idMateria),
+      SubjectRepository.findById(idCorrelativa)
+    ])
+
+    //Si alguna de las materias no existe, lanzamos un error
+    if (!materia || !correlativa) throw new Error("una o ambas materias no existen en la base de datos principal");
+
+    //Replicamos en Neo4j
+    try {
+      await GraphRepository.agregarCorrelatividad(idMateria, idCorrelativa);
+    } catch (error) {
+      console.error('⚠️ Error sincronizando correlatividad con Neo4j:', error);
+      throw new Error("No se pudo registrar la correlatividad en el sistema de grafos.")
+    }
+
+    return { mensaje: "Correlatividad registrada con exito" };
+  }
+
+  //Obtiene las materias necesarias para cursar otra materia
+  async obtenerCorrelativas(idMateria) {
+    try {
+      // Pedimos directo al grafo
+      const correlativas = await GraphRepository.obtenerCorrelativas(idMateria);
+      return correlativas;
+    } catch (error) {
+      console.error('⚠️ Error obteniendo correlativas:', error);
+      return []; // Si falla, devolvemos un array vacío para no romper el front
+    }
+  }
+
   async actualizarMateria(id, datos) { return await SubjectRepository.update(id, datos); }
   async eliminarMateria(id) { return await SubjectRepository.delete(id); }
   async buscarMateriaPorNombre(nombre, limit, skip) { return await SubjectRepository.findByName(nombre, limit, skip); }

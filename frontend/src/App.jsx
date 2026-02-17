@@ -4,6 +4,7 @@ import EstudianteList from './components/estudiante/EstudianteList'
 import InstitucionList from './components/institucion/InstitucionList'
 import MateriaList from './components/materia/MateriaList'
 import GradeConversion from './components/calificaciones/GradeConversion';
+import RuleManager from './components/calificaciones/RuleManager';
 
 function App() {
   const [view, setView] = useState('students');
@@ -29,7 +30,8 @@ function App() {
           <Tab key="students" title="Estudiantes" />
           <Tab key="institutions" title="Instituciones" />
           <Tab key="subjects" title="Materias" />
-          <Tab key="conversion" title="Conversor" />
+          <Tab key="analiticas" title="Analíticas" />
+          <Tab key="administracion" title="Administración" />
         </Tabs>
       </header>
 
@@ -45,15 +47,28 @@ function App() {
         )}
 
         {view === 'subjects' && (
-          <MateriaList />
+          <div>
+            <MateriaList />
+            <h2 className="text-xl font-semibold p-4">Faltan equivalencias y correlatividades (Neo)</h2>
+          </div>
         )}
 
-        {view === 'conversion' && (
-          <GradeConversion />
+        {view === 'analiticas' && (
+          <div className="p-4">
+            <h2 className="text-xl font-semibold">Cálculos de promedios y demás en Cassandra</h2>
+          </div>
+        )}
+
+        {view === 'administracion' && (
+          <div>
+            <h2 className="text-xl font-semibold p-4">Faltan registros de trazabilidad y auditoria (Cassandra)</h2>
+            <GradeConversion />
+            {/* <RuleManager /> */}
+          </div>
         )}
       </main>
       
-      <footer className='mt-10 text-center text-sm text-slate-400'>
+      <footer className='my-10 text-center text-sm text-slate-400'>
         <p>TPO Persistencia Políglota - Sistema Nacional de Calificaciones Multimodelo</p>
       </footer>
     </div>

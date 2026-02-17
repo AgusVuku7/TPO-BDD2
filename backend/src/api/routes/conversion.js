@@ -15,14 +15,14 @@ router.post('/regla', async (req, res) => {
 // RUTA PARA CONVERTIR UNA NOTA (Uso académico)
 router.get('/convertir', async (req, res) => {
   try {
-    const { origen, destino, nota, version } = req.query;
+    const { origen, destino, nota } = req.query;
 
     // Validación de presencia de datos
     if (!origen || !destino || !nota) {
       return res.status(400).json({ error: "Faltan parámetros requeridos: origen, destino y nota." });
     }
 
-    const resultado = await ConversionService.convertirNota(origen, destino, nota, version);
+    const resultado = await ConversionService.convertirNota(origen, destino, nota);
     res.json(resultado);
   } catch (error) {
     // Diferenciamos errores de "no encontrado" vs errores de "validación"

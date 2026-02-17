@@ -1,20 +1,19 @@
 const { getRedisClient } = require('../utils/DatabaseManager');
 
 class RepositorioReglas {
-  /**
-   * Guarda el JSON de la regla en Redis
-   */
-  async set(key, value) {
+
+  // Recibe la key ya armada y el objeto de la regla
+  async pushRule(key, value) {
     const client = getRedisClient();
-    return await client.set(key, JSON.stringify(value));
+    // La operación LPUSH es O(1) y garantiza el comportamiento Append-only
+    const data = JSON.stringify(value); 
+    return await client.lPush(key, data); 
   }
 
-  /**
-   * Obtiene la regla desde Redis
-   */
-  async get(key) {
+  // Obtiene el elemento más reciente (índice 0) en O(1)
+  async getLatestRule(key) {
     const client = getRedisClient();
-    const data = await client.get(key);
+    const data = await client.lIndex(key, 0); 
     return data ? JSON.parse(data) : null;
   }
 }

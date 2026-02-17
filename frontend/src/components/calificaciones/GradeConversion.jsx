@@ -24,8 +24,8 @@ const GradeConversion = () => {
     setResultado(null);
 
     // Validación básica en el cliente
-    if (!formData.nota || isNaN(parseFloat(formData.nota))) {
-      setError("Por favor, ingresa una nota válida.");
+    if (!formData.nota.trim()) {
+      setError("Por favor, ingresa una calificación.");
       return;
     }
 
@@ -62,9 +62,9 @@ const GradeConversion = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           {/* Input de Nota */}
           <Input
-            type="number"
+            type="text"
             label="Nota Original"
-            placeholder="0.00"
+            placeholder="Ej: 8.5 o A*"
             labelPlacement="outside"
             isInvalid={!!error}
             errorMessage={error}
@@ -119,6 +119,9 @@ const GradeConversion = () => {
             </div>
             <Chip size="sm" variant="flat" color="primary" className="mt-2">
               Versión: {resultado.metadata.version}
+            </Chip>
+            <Chip size="sm" variant="flat" color="secondary">
+              Sincronizado: {new Date(resultado.metadata.timestamp).toLocaleDateString()}
             </Chip>
           </div>
         )}

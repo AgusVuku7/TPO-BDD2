@@ -1,60 +1,87 @@
 const repositorioReglas = require('../repositories/repositorioReglas');
+const Regla = require('../models/Regla');
 
 class ConversionService {
   constructor() {
     this.localCache = {};
   }
 
-  async guardarRegla(regla) {
-    const key = `regla:${regla.origen}:${regla.destino}:${regla.version}`;
-    const latestKey = `regla:${regla.origen}:${regla.destino}:latest`;
+  async guardarRegla(datosRegla) {
+    // 1. Instanciamos el modelo
+    const nuevaRegla = new Regla(datosRegla);
+
+    // 2. Ejecutamos la validación del modelo
+    nuevaRegla.validar();
+
+    // 3. Generamos la key de historial
+    const historyKey = `regla:${nuevaRegla.origen}:${nuevaRegla.destino}:history`;
     
-    // Usamos el repositorio en lugar de getRedisClient directamente
-    await repositorioReglas.set(key, regla);
-    await repositorioReglas.set(latestKey, regla);
+    // 4. Guardamos el objeto instanciado (Redis guardará el JSON resultante)
+    await repositorioReglas.pushRule(historyKey, nuevaRegla);
     
-    delete this.localCache[key];
-    delete this.localCache[latestKey];
-    return key;
+    // 5. Invalidador de caché
+    const cacheKey = `regla:${nuevaRegla.origen}:${nuevaRegla.destino}:latest`;
+    delete this.localCache[cacheKey];
+    
+    return historyKey;
   }
 
-  async convertirNota(origen, destino, notaOriginal, version = 'latest') {
-    // 1. Normalización y Validación básica
+  async convertirNota(origen, destino, notaOriginal) {
     const _origen = origen?.toUpperCase();
     const _destino = destino?.toUpperCase();
+    
+    // Normalizamos la nota de entrada (quitamos espacios y pasamos a Mayúsculas)
+    const notaNormalizada = notaOriginal.toString().trim().toUpperCase();
     const notaNum = parseFloat(notaOriginal);
 
-    if (isNaN(notaNum)) throw new Error("La calificación debe ser un número válido.");
-    
-    // 2. Caso de Identidad: Si el origen y destino son iguales, no hace falta Redis
     if (_origen === _destino) {
       return {
-        resultado: notaNum.toString(),
+        resultado: notaNormalizada,
         label: "Escala Original",
         metadata: { version: "n/a", origen: "identity-logic" }
       };
     }
 
-    const key = `regla:${_origen}:${_destino}:${version}`;
-    let regla = this.localCache[key];
+    const cacheKey = `regla:${_origen}:${_destino}:latest`;
+    let regla = this.localCache[cacheKey];
 
     if (!regla) {
-      regla = await repositorioReglas.get(key);
+      const historyKey = `regla:${_origen}:${_destino}:history`;
+      regla = await repositorioReglas.getLatestRule(historyKey);
+      
       if (!regla) throw new Error(`No existe una regla de conversión de ${_origen} a ${_destino}.`);
-      this.localCache[key] = regla;
+      this.localCache[cacheKey] = regla;
     }
 
-    // 3. Búsqueda de mapeo con protección de rango
-    const mapeo = regla.mapping.find(m => notaNum >= m.min && notaNum <= m.max);
+    // LÓGICA DE BÚSQUEDA HÍBRIDA
+    const mapeo = regla.mapping.find(m => {
+      // 1. Coincidencia exacta (Para escalas alfabéticas como UK: 'A*', 'B', 'C')
+      const minStr = m.min.toString().toUpperCase();
+      const maxStr = m.max.toString().toUpperCase();
+      
+      if (notaNormalizada === minStr || notaNormalizada === maxStr) {
+        return true;
+      }
+
+      // 2. Coincidencia por rango (Para escalas numéricas como AR: 1-10 o US: 0.0-4.0)
+      if (!isNaN(notaNum) && typeof m.min === 'number' && typeof m.max === 'number') {
+        return notaNum >= m.min && notaNum <= m.max;
+      }
+
+      return false;
+    });
 
     if (!mapeo) {
-      throw new Error(`La nota ${notaNum} está fuera del rango permitido para el sistema ${_origen}.`);
+      throw new Error(`La nota "${notaOriginal}" no es válida para el sistema ${_origen}.`);
     }
 
     return {
       resultado: mapeo.result,
       label: mapeo.label,
-      metadata: { version: regla.version }
+      metadata: { 
+        version: regla.version,
+        timestamp: regla.timestamp 
+      }
     };
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '../../services/api';
 import MateriaForm from './MateriaForm';
 import MateriaDetail from './MateriaDetail';
+import EquivalenciaForm from './EquivalenciaForm'; // <--- Importamos el nuevo componente
 import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
 import { Eye, Pencil, Plus, SearchIcon, Trash2, LibraryBig } from 'lucide-react';
 
@@ -50,8 +51,12 @@ const MateriaList = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Eliminar esta materia?')) {
-      await api.delete(`/materia/${id}`);
-      load();
+      try {
+        await api.delete(`/materia/${id}`);
+        load();
+      } catch (error) {
+        console.error("Error al eliminar:", error);
+      }
     }
   };
 
@@ -93,6 +98,12 @@ const MateriaList = () => {
       <Divider orientation="horizontal" className="my-5" />
 
       <CardBody>
+        {/* --- FORMULARIO DE EQUIVALENCIAS --- */}
+        <EquivalenciaForm onSuccess={() => load()} />
+
+        <Divider className="my-6" />
+
+        {/* --- TABLA DE MATERIAS --- */}
         <Table aria-label="Tabla de Materias" className="shadow-none" removeWrapper>
           <TableHeader>
             <TableColumn className="bg-blue-50 text-slate-800">NOMBRE</TableColumn>

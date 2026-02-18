@@ -85,39 +85,86 @@ class GraphRepository {
         }
     }
 
-    //Relacion EQUIVALE
-    async crearEquivalencia(materiaId1, materiaId2, porcentaje) {
-        //Obtenemos el driver y abrimos sesion
+    /**
+    * Crea una relación de equivalencia entre dos materias.
+    * Usamos MERGE para evitar duplicados.
+    */
+    async crearEquivalencia(idMateriaOrigen, idMateriaDestino, porcentaje) {
         const driver = getNeo4jDriver();
         const session = driver.session();
 
         try {
-            //Ejecutamos la query
-            await session.run(
-                `
-                MATCH (m1:Materia {id: $materiaId1}), (m2:Materia {id: $materiaId2})
-                MERGE (m1)-[r:EQUIVALE_A {porcentaje: $porcentaje}]->(m2)
-                MERGE (m2)-[r2:EQUIVALE_A {porcentaje: $porcentaje}]->(m1)
-                RETURN type(r)
-                `,
-                //Pasamos los IDs a Strings ya que en neo4j se guardan en ese formato
-                {
-                    materiaId1: materiaId1.toString(),
-                    materiaId2: materiaId2.toString(),
-                    porcentaje
-                }
-            );
-            
-            console.log(`🟢 Relacion creada en Neo4j: ${materiaId1} es equivalente a ${materiaId2}`);
+        const result = await session.run(
+            //Creamos la relacion en una sola direccion
+            `
+            MATCH (a:Materia {id: $idA})
+            MATCH (b:Materia {id: $idB})
+            MERGE (a)-[r:EQUIVALE_A]->(b)
+            SET r.createdAt = datetime(),
+                r.porcentaje = $porcentaje
+            RETURN r
+            `,
+            { 
+            idA: idMateriaOrigen.toString(), 
+            idB: idMateriaDestino.toString(),
+            porcentaje: parseFloat(porcentaje)
+            }
+        );
 
-        } catch (error) {
-            console.error('🔴 Error creando equivalencia en grafo:', error);
-            throw error; //Lanzamos el error para que el backend se entere
-        } finally {
-            //Cerramos sesion
-            await session.close();
+        if (result.records.length === 0) {
+            throw new Error(`No se encontraron los nodos en el grafo. Asegurate de que las materias existan.`);
         }
+
+        return result.records[0].get('r').properties;
+        } catch (error) {
+        console.error('🔴 Error creando equivalencia:', error);
+        throw error;
+        } finally {
+        await session.close();
+        }
+    }  
+
+    /**
+    * Busca equivalencias usando caminos de longitud variable (*1..4).
+    * Esto permite encontrar equivalencias indirectas (A->B->C).
+    */
+    async buscarEquivalencia(idMateria, sistemaDestino) {
+    const driver = getNeo4jDriver();
+    const session = driver.session();
+
+    try {
+        const result = await session.run(
+            `
+            MATCH path = (start:Materia {id: $id})-[:EQUIVALE_A*1..4]-(end:Materia)
+            WHERE end.pais = $sistema 
+              AND start <> end
+            RETURN end, 
+                   length(path) as saltos, 
+                   [rel in relationships(path) | rel.porcentaje] as porcentajes
+            ORDER BY saltos ASC
+            `,
+            { 
+                id: idMateria.toString(), 
+                sistema: sistemaDestino 
+            }
+        );
+
+        if (result.records.length === 0) return []; // Retornamos un array vacío si no hay nada
+
+        // Mapeamos TODOS los resultados encontrados
+        return result.records.map(record => ({
+            materia: record.get('end').properties,
+            distancia: record.get('saltos').toNumber(),
+            porcentajes: record.get('porcentajes')
+        }));
+
+    } catch (error) {
+        console.error('🔴 Error buscando equivalencias:', error);
+        throw error;
+    } finally {
+        await session.close();
     }
+}
 
     //Generamos una correlatividad entre dos materias
     async agregarCorrelatividad(idMateria, idCorrelativa) {

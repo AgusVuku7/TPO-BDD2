@@ -6,6 +6,7 @@ import MateriaList from './components/materia/MateriaList'
 import GradeConversion from './components/calificaciones/GradeConversion';
 import RuleManager from './components/calificaciones/RuleManager';
 import MateriaDetail from './components/materia/MateriaDetail'
+import AnaliticaDashboard from './components/analitica/AnaliticaDashboard';
 
 function App() {
   const [view, setView] = useState('students');
@@ -65,9 +66,7 @@ function App() {
         )}
 
         {view === 'analiticas' && (
-          <div className="p-4">
-            <h2 className="text-xl font-semibold">Cálculos de promedios y demás en Cassandra</h2>
-          </div>
+          <AnaliticaDashboard />
         )}
 
         {view === 'administracion' && (

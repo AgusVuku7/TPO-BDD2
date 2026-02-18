@@ -1,12 +1,42 @@
 const GraphRepository = require('../repositories/repositorioGrafoTrayectoria');
+const StudentRepository = require('../repositories/repositorioEstudiante');
+const InstitutionRepository = require('../repositories/repositorioInstitucion');
+const SubjectRepository = require('../repositories/repositorioMateria');
+const AnaliticaRepo = require('../repositories/repositorioCassandraAnalitica');
 
 class TrayectoriaService {
 
     // Materias
     async registrarTrayectoriaMateria(estudianteId, datos) {
         const { materiaId, nota, anio } = datos;
-        // Habría que validar si el estudiante existe en Mongo primero
-        return await GraphRepository.registrarCursada(estudianteId, materiaId, nota, anio);
+        // 1. Obtener contexto de Mongo para Cassandra (País, Sistema, Nivel)
+        const [estudiante, materia] = await Promise.all([
+            StudentRepository.findById(estudianteId),
+            SubjectRepository.findById(materiaId)
+        ]);
+        
+        if (!estudiante || !materia) throw new Error("Estudiante o Materia no encontrados");
+
+        // Obtenemos la institución para saber el sistema educativo
+        const institucion = await InstitutionRepository.findById(materia.institucion);
+
+        // 2. Neo4j: Registrar la cursada individual
+        await GraphRepository.registrarCursada(estudianteId, materiaId, nota, anio);
+
+        // 3. Cassandra: Actualizar analítica agregada (No bloqueante)
+        AnaliticaRepo.actualizarMetricasMateria({
+            institucionId: institucion._id,
+            materiaId: materia._id,
+            materiaNombre: materia.nombre,
+            anio: parseInt(anio),
+            nota: parseFloat(nota),
+            esAprobado: nota >= 4,
+            pais: estudiante.pais,
+            sistema: institucion.sistema_educativo,
+            nivel: materia.nivel || "Grado"
+        }).catch(err => console.error("⚠️ Error en Cassandra Analítica:", err));
+
+        return { mensaje: "Trayectoria y analítica actualizadas" };
     }
 
     async obtenerTrayectoriaMateria(estudianteId) {

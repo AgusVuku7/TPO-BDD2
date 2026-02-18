@@ -79,4 +79,46 @@ router.get('/:id/correlativas', async (req, res) => {
   }
 });
 
+// POST: Crear una nueva equivalencia
+router.post('/equivalencia', async (req, res) => {
+  try {
+    // Extraemos el porcentaje (default 100 si no viene dado)
+    const { idOrigen, idDestino, porcentaje } = req.body;
+    
+    if (!idOrigen || !idDestino) {
+      return res.status(400).json({ error: "Se requieren idOrigen y idDestino" });
+    }
+
+    const repoGrafo = require('../../repositories/repositorioGrafo');
+    const resultado = await repoGrafo.crearEquivalencia(idOrigen, idDestino, porcentaje);
+    
+    res.status(201).json({ message: "Equivalencia creada", data: resultado });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET: Consultar equivalencia
+router.get('/:id/equivalencia', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sistema } = req.query; // Ej: ?sistema=DE
+
+    if (!sistema) {
+      return res.status(400).json({ error: "Falta el parámetro 'sistema'" });
+    }
+
+    const repoGrafo = require('../../repositories/repositorioGrafo');
+    const resultado = await repoGrafo.buscarEquivalencia(id, sistema);
+
+    if (!resultado) {
+      return res.status(404).json({ message: "No se encontró equivalencia." });
+    }
+
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

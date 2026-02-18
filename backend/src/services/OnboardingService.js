@@ -102,6 +102,15 @@ class OnboardingService {
     }
   }
 
+  async registrarEquivalencia(idOrigen, idDestino, porcentaje) {
+    // Podrías agregar validaciones extra acá si quisieras
+    return await GraphRepository.crearEquivalencia(idOrigen, idDestino, porcentaje);
+  }
+
+  async buscarEquivalencia(idMateria, sistema) {
+    return await GraphRepository.buscarEquivalencia(idMateria, sistema);
+  }
+
   async actualizarMateria(id, datos) { return await SubjectRepository.update(id, datos); }
   async eliminarMateria(id) { return await SubjectRepository.delete(id); }
   async buscarMateriaPorNombre(nombre, limit, skip) { return await SubjectRepository.findByName(nombre, limit, skip); }

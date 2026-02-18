@@ -106,6 +106,7 @@ class OnboardingService {
   async eliminarMateria(id) { return await SubjectRepository.delete(id); }
   async buscarMateriaPorNombre(nombre, limit, skip) { return await SubjectRepository.findByName(nombre, limit, skip); }
   async obtenerMateriasPaginadas(limit, skip) { return await SubjectRepository.findPaged(limit, skip); }
+
 }
 
 module.exports = new OnboardingService();

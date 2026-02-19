@@ -1,7 +1,8 @@
 const { getNeo4jDriver } = require('../utils/DatabaseManager');
 
 class GraphRepository {
-    //Nodo Estudiante
+    
+    // --- CRUD DEL ESTUDIANTE --- \\
     async crearEstudiante(mongoId, nombre) {
         //Obtenemos el driver y abrimos sesion
         const driver = getNeo4jDriver();
@@ -29,7 +30,46 @@ class GraphRepository {
         }
     }
 
-    //Nodo Materia
+    async actualizarEstudiante(mongoId, nombre) {
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        try {
+            await session.run(
+                `
+                MATCH (e:Estudiante {id: $id})
+                SET e.nombre = $nombre
+                RETURN e
+                `,
+                { id: mongoId.toString(), nombre }
+            );
+            console.log(`🟢 Nodo actualizado en Neo4j: Estudiante ${nombre}`);
+        } catch (error) {
+            console.error('🔴 Error actualizando estudiante en grafo:', error);
+        } finally {
+            await session.close();
+        }
+    }
+
+    async eliminarEstudiante(mongoId) {
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        try {
+            await session.run(
+                `
+                MATCH (e:Estudiante {id: $id})
+                DETACH DELETE e
+                `,
+                { id: mongoId.toString() }
+            );
+            console.log(`🗑️ Nodo eliminado en Neo4j: Estudiante ${mongoId}`);
+        } catch (error) {
+            console.error('🔴 Error eliminando estudiante en grafo:', error);
+        } finally {
+            await session.close();
+        }
+    }
+
+    // --- CRUD DE MATERIAS --- \\
     async crearMateria(mongoId, nombre, pais) {
         //Obtenemos el driver y abrimos sesion
         const driver = getNeo4jDriver();
@@ -57,38 +97,48 @@ class GraphRepository {
         }
     }
 
-    //Nodo Institucion
-    async crearInstitucion(mongoId, nombre, pais) {
-        //Obtenemos el driver y abrimos sesion
+    async actualizarMateria(mongoId, nombre, pais) {
         const driver = getNeo4jDriver();
         const session = driver.session();
-        
         try {
-            //Ejecutamos la query
             await session.run(
                 `
-                MERGE (i:Institucion {id: $id})
-                ON CREATE SET i.nombre = $nombre, i.pais = $pais
-                RETURN i
+                MATCH (m:Materia {id: $id})
+                SET m.nombre = $nombre, m.pais = $pais
+                RETURN m
                 `,
                 { id: mongoId.toString(), nombre, pais }
             );
-            
-            console.log(`🟢 Nodo creado en Neo4j: ${nombre}`);
-
+            console.log(`🟢 Nodo actualizado en Neo4j: Materia ${nombre}`);
         } catch (error) {
-            console.error('🔴 Error creando institucion en grafo:', error);
-            throw error; //Lanzamos el error para que el backend se entere
+            console.error('🔴 Error actualizando materia en grafo:', error);
         } finally {
-            //Cerramos sesion
             await session.close();
         }
     }
 
-    /**
-    * Crea una relación de equivalencia entre dos materias.
-    * Usamos MERGE para evitar duplicados.
-    */
+    async eliminarMateria(mongoId) {
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        try {
+            await session.run(
+                `
+                MATCH (m:Materia {id: $id})
+                DETACH DELETE m
+                `,
+                { id: mongoId.toString() }
+            );
+            console.log(`🗑️ Nodo eliminado en Neo4j: Materia ${mongoId}`);
+        } catch (error) {
+            console.error('🔴 Error eliminando materia en grafo:', error);
+        } finally {
+            await session.close();
+        }
+    }
+
+    
+    // --- EQUIVALENCIAS --- \\
+    
     async crearEquivalencia(idMateriaOrigen, idMateriaDestino, porcentaje) {
         const driver = getNeo4jDriver();
         const session = driver.session();
@@ -124,9 +174,7 @@ class GraphRepository {
         }
     }  
 
-    /**
-    * Busca equivalencias priorizando siempre el camino más corto (Directa mata Transitiva).
-    */
+    // Busca equivalencias priorizando siempre el camino más corto (Directa mata Transitiva).
     async buscarEquivalencia(idMateria, sistemaDestino) {
         const driver = getNeo4jDriver();
         const session = driver.session();
@@ -173,7 +221,7 @@ class GraphRepository {
         }
     }
 
-    //Generamos una correlatividad entre dos materias
+    // --- CORRELATIVIDADES --- \\
     async agregarCorrelatividad(idMateria, idCorrelativa) {
         //Obtenemos el driver y abrimos sesion
         const driver = getNeo4jDriver();
@@ -230,6 +278,72 @@ class GraphRepository {
             await session.close();
         }
     }
-}
 
+    // --- CRUD DE INSTITUCIONES --- \\
+    async crearInstitucion(mongoId, nombre, pais) {
+        //Obtenemos el driver y abrimos sesion
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        
+        try {
+            //Ejecutamos la query
+            await session.run(
+                `
+                MERGE (i:Institucion {id: $id})
+                ON CREATE SET i.nombre = $nombre, i.pais = $pais
+                RETURN i
+                `,
+                { id: mongoId.toString(), nombre, pais }
+            );
+            
+            console.log(`🟢 Nodo creado en Neo4j: ${nombre}`);
+
+        } catch (error) {
+            console.error('🔴 Error creando institucion en grafo:', error);
+            throw error; //Lanzamos el error para que el backend se entere
+        } finally {
+            //Cerramos sesion
+            await session.close();
+        }
+    }
+
+    async actualizarInstitucion(mongoId, nombre, pais) {
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        try {
+            await session.run(
+                `
+                MATCH (i:Institucion {id: $id})
+                SET i.nombre = $nombre, i.pais = $pais
+                RETURN i
+                `,
+                { id: mongoId.toString(), nombre, pais }
+            );
+            console.log(`🟢 Nodo actualizado en Neo4j: Institucion ${nombre}`);
+        } catch (error) {
+            console.error('🔴 Error actualizando institucion en grafo:', error);
+        } finally {
+            await session.close();
+        }
+    }
+
+    async eliminarInstitucion(mongoId) {
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+        try {
+            await session.run(
+                `
+                MATCH (i:Institucion {id: $id})
+                DETACH DELETE i
+                `,
+                { id: mongoId.toString() }
+            );
+            console.log(`🗑️ Nodo eliminado en Neo4j: Institucion ${mongoId}`);
+        } catch (error) {
+            console.error('🔴 Error eliminando institucion en grafo:', error);
+        } finally {
+            await session.close();
+        }
+    }
+}
 module.exports = new GraphRepository();

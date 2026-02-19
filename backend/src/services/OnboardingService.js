@@ -20,8 +20,34 @@ class OnboardingService {
 
     return estudianteMongo;
   }
-  async actualizarEstudiante(id, datos) { return await StudentRepository.update(id, datos); }
-  async eliminarEstudiante(id) { return await StudentRepository.delete(id); }
+  async actualizarEstudiante(id, datos) {
+    const estudianteMongo = await StudentRepository.update(id, datos);
+    //Chequeamos que estudianteMongo no sea null
+    if (estudianteMongo) {
+      try {
+        await GraphRepository.actualizarEstudiante(
+          id,                       //Pasamos el ID
+          estudianteMongo.nombre,   //Pasamos el Nombre
+        );
+      } catch (error) {
+        console.error('⚠️ Error actualizando estudiante en Neo4j:', error.message);
+      }
+    }
+  }
+
+  async eliminarEstudiante(id) { 
+    const resultadoMongo = await StudentRepository.delete(id); 
+    // Si se borró en Mongo con éxito, procedemos a borrar en Neo4j
+    if (resultadoMongo) {
+      try {
+        await GraphRepository.eliminarEstudiante(id);
+      } catch (error) {
+        console.error('⚠️ Error eliminando estudiante en Neo4j:', error.message);
+      }
+    }
+    return resultadoMongo;
+  }
+
   async buscarEstudiantePorNombre(nombre, limit, skip) { return await StudentRepository.findByName(nombre, limit, skip); }
   async obtenerEstudiantesPaginados(limit, skip) { return await StudentRepository.findPaged(limit, skip); }
 
@@ -42,8 +68,32 @@ class OnboardingService {
 
     return institucionMongo;
   }
-  async actualizarInstitucion(id, datos) { return await InstitutionRepository.update(id, datos); }
-  async eliminarInstitucion(id) { return await InstitutionRepository.delete(id); }
+
+  async actualizarInstitucion(id, datos) { 
+    const institucionMongo = await InstitutionRepository.update(id, datos); 
+    //Chequeamos que la institucion no sea null
+    if (institucionMongo) {
+      try {
+        await GraphRepository.actualizarInstitucion(id, institucionMongo.nombre, institucionMongo.pais);
+      } catch (error) {
+        console.error('⚠️ Error actualizando institución en Neo4j:', error.message);
+      }
+    }
+    return institucionMongo;
+  }
+
+  async eliminarInstitucion(id) { 
+    const resultadoMongo = await InstitutionRepository.delete(id); 
+    if (resultadoMongo) {
+      try {
+        await GraphRepository.eliminarInstitucion(id);
+      } catch (error) {
+        console.error('⚠️ Error eliminando institución en Neo4j:', error.message);
+      }
+    }
+    return resultadoMongo;
+  }
+
   async buscarInstitucionPorNombre(nombre, limit, skip) { return await InstitutionRepository.findByName(nombre, limit, skip); }
   async obtenerInstitucionesPaginadas(limit, skip) { return await InstitutionRepository.findPaged(limit, skip); }
 
@@ -111,8 +161,36 @@ class OnboardingService {
     return await GraphRepository.buscarEquivalencia(idMateria, sistema);
   }
 
-  async actualizarMateria(id, datos) { return await SubjectRepository.update(id, datos); }
-  async eliminarMateria(id) { return await SubjectRepository.delete(id); }
+  async actualizarMateria(id, datos) { 
+    const materiaMongo = await SubjectRepository.update(id, datos); 
+    
+    if (materiaMongo) {
+      try {
+        // Para actualizar la materia en Neo4j necesitamos saber su país.
+        // Como el país viene de la institución a la que pertenece, lo buscamos:
+        const inst = await InstitutionRepository.findById(materiaMongo.institucion);
+        const pais = inst ? inst.pais : 'Desconocido';
+
+        await GraphRepository.actualizarMateria(id, materiaMongo.nombre, pais);
+      } catch (error) {
+        console.error('⚠️ Error actualizando materia en Neo4j:', error.message);
+      }
+    }
+    return materiaMongo;
+  }
+
+  async eliminarMateria(id) { 
+    const resultadoMongo = await SubjectRepository.delete(id); 
+    if (resultadoMongo) {
+      try {
+        await GraphRepository.eliminarMateria(id);
+      } catch (error) {
+        console.error('⚠️ Error eliminando materia en Neo4j:', error.message);
+      }
+    }
+    return resultadoMongo;
+  }
+
   async buscarMateriaPorNombre(nombre, limit, skip) { return await SubjectRepository.findByName(nombre, limit, skip); }
   async obtenerMateriasPaginadas(limit, skip) { return await SubjectRepository.findPaged(limit, skip); }
 

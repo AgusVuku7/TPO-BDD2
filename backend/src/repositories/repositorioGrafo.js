@@ -125,46 +125,53 @@ class GraphRepository {
     }  
 
     /**
-    * Busca equivalencias usando caminos de longitud variable (*1..4).
-    * Esto permite encontrar equivalencias indirectas (A->B->C).
+    * Busca equivalencias priorizando siempre el camino más corto (Directa mata Transitiva).
     */
     async buscarEquivalencia(idMateria, sistemaDestino) {
-    const driver = getNeo4jDriver();
-    const session = driver.session();
-
-    try {
-        const result = await session.run(
-            `
-            MATCH path = (start:Materia {id: $id})-[:EQUIVALE_A*1..4]-(end:Materia)
-            WHERE end.pais = $sistema 
-              AND start <> end
-            RETURN end, 
-                   length(path) as saltos, 
-                   [rel in relationships(path) | rel.porcentaje] as porcentajes
-            ORDER BY saltos ASC
-            `,
-            { 
-                id: idMateria.toString(), 
-                sistema: sistemaDestino 
-            }
-        );
-
-        if (result.records.length === 0) return []; // Retornamos un array vacío si no hay nada
-
-        // Mapeamos TODOS los resultados encontrados
-        return result.records.map(record => ({
-            materia: record.get('end').properties,
-            distancia: record.get('saltos').toNumber(),
-            porcentajes: record.get('porcentajes')
-        }));
-
-    } catch (error) {
-        console.error('🔴 Error buscando equivalencias:', error);
-        throw error;
-    } finally {
-        await session.close();
+        const driver = getNeo4jDriver();
+        const session = driver.session();
+    
+        try {
+            const result = await session.run(
+                `
+                MATCH path = (start:Materia {id: $id})-[:EQUIVALE_A*1..4]-(end:Materia)
+                WHERE toLower(end.pais) = toLower($sistema) 
+                  AND start <> end
+                
+                // 1. Ordenamos todos los caminos encontrados por longitud (menor a mayor)
+                WITH end, path
+                ORDER BY length(path) ASC
+    
+                // 2. Agrupamos por materia destino ('end') y nos quedamos SOLO con el primero (el más corto)
+                WITH end, head(collect(path)) as shortestPath
+    
+                // 3. Devolvemos los datos de ese camino ganador
+                RETURN end, 
+                       length(shortestPath) as saltos, 
+                       [rel in relationships(shortestPath) | rel.porcentaje] as porcentajes
+                ORDER BY saltos ASC
+                `,
+                { 
+                    id: idMateria.toString(), 
+                    sistema: sistemaDestino 
+                }
+            );
+    
+            if (result.records.length === 0) return []; 
+    
+            return result.records.map(record => ({
+                materia: record.get('end').properties,
+                distancia: record.get('saltos').toNumber(),
+                porcentajes: record.get('porcentajes')
+            }));
+    
+        } catch (error) {
+            console.error('🔴 Error buscando equivalencias:', error);
+            throw error;
+        } finally {
+            await session.close();
+        }
     }
-}
 
     //Generamos una correlatividad entre dos materias
     async agregarCorrelatividad(idMateria, idCorrelativa) {

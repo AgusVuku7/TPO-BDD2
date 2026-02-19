@@ -73,7 +73,7 @@ function App() {
           <div>
             <h2 className="text-xl font-semibold p-4">Faltan registros de trazabilidad y auditoria (Cassandra)</h2>
             <GradeConversion />
-            {/* <RuleManager /> */}
+            <RuleManager />
           </div>
         )}
       </main>

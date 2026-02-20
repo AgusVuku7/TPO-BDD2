@@ -1,58 +1,59 @@
-
 // Ejecuta el script: node backend/src/scripts/setupCassandra.js
 
 const cassandra = require('cassandra-driver');
 
 // Configuración de conexión
 const client = new cassandra.Client({
-    contactPoints: ['127.0.0.1'],
-    localDataCenter: 'datacenter1'
+    contactPoints: [process.env.CASSANDRA_CONTACT_POINTS || 'cassandra'], 
+    localDataCenter: process.env.CASSANDRA_DC || 'datacenter1'
 });
 
 async function inicializarCassandra() {
-    try {
-        console.log("🚀 Configurando tablas de analítica para EduGrade...");
+    const keyspace = 'edugrade_analitica';
 
-        // 1. Crear Keyspace
+    try {
+        console.log("🧹 Limpiando base de datos existente...");
+        
+        // 1. Eliminar Keyspace si existe (Limpieza total)
+        await client.execute(`DROP KEYSPACE IF EXISTS ${keyspace}`);
+        console.log(`✅ Keyspace "${keyspace}" eliminado (si existía).`);
+
+        console.log("🚀 Configurando nuevas tablas de analítica para EduGrade...");
+
+        // 2. Crear Keyspace de nuevo
         await client.execute(`
-            CREATE KEYSPACE IF NOT EXISTS edugrade_analitica 
+            CREATE KEYSPACE IF NOT EXISTS ${keyspace} 
             WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
         `);
         
-        await client.execute("USE edugrade_analitica");
-        console.log("✅ Keyspace listo.");
+        await client.execute(`USE ${keyspace}`);
+        console.log("✅ Keyspace creado y seleccionado.");
 
-        // 2. Definición de las tablas exactas de la consigna
+        // 3. Definición de tablas
         const queries = [
             // Tabla 1: Promedios por Institución
-            // "¿Cuál es el promedio y la tasa de aprobación de la Institución X en el año Y?"
-            // Uso: Permite obtener promedios por institución rápidamente. La tasa de aprobación se calcula dividiendo total_aprobados / total_estudiantes.
             `CREATE TABLE IF NOT EXISTS analitica_por_institucion (
-                institucion_id uuid,
+                institucion_id text, 
                 anio_lectivo int,
-                materia_id uuid,
+                materia_id text,
                 nombre_materia text,
                 suma_notas double,
-                total_estudiantes counter,
-                total_aprobados counter,
+                total_estudiantes int,
+                total_aprobados int,
                 PRIMARY KEY (institucion_id, anio_lectivo, materia_id)
             ) WITH CLUSTERING ORDER BY (anio_lectivo DESC)`,
 
             // Tabla 2: Distribuciones Geográficas y Niveles
-            // "¿Cómo se distribuyen las notas en el País P para el Nivel Educativo N?"
-            // Uso: Ideal para gráficos de barras o distribuciones por región y país, cumpliendo con la gestión de información internacional.
             `CREATE TABLE IF NOT EXISTS distribucion_por_pais_nivel (
                 pais text,
                 nivel_educativo text,
                 rango_nota text,
                 anio_lectivo int,
-                cantidad_estudiantes counter,
+                cantidad_estudiantes int,
                 PRIMARY KEY ((pais, nivel_educativo), anio_lectivo, rango_nota)
             )`,
 
             // Tabla 3: Histórico de Sistemas
-            // "Compara la evolución del Sistema Educativo A vs B en los últimos 5 años".
-            // Uso: Al particionar por sistema_educativo, puedes traer toda la historia de un sistema en una sola consulta para graficar líneas de tiempo.
             `CREATE TABLE IF NOT EXISTS analitica_sistemas_historico (
                 sistema_educativo text,
                 anio_lectivo int,
@@ -63,23 +64,22 @@ async function inicializarCassandra() {
             ) WITH CLUSTERING ORDER BY (anio_lectivo DESC)`,
 
             // Tabla 4: Métricas para Desvíos Estadísticos
-            // Esta tabla te da los tres componentes (sumatoria x^2, sumatoria x, N) de forma inmediata
             `CREATE TABLE IF NOT EXISTS metricas_desvio_estandar (
                 contexto_id text,
                 anio_lectivo int,
                 suma_notas double,
                 suma_cuadrados_notas double,
-                total_muestras counter,
+                total_muestras int,
                 PRIMARY KEY (contexto_id, anio_lectivo)
             )`
         ];
 
-        // 3. Ejecución secuencial
+        // 4. Ejecución secuencial de creación
         for (const query of queries) {
             await client.execute(query);
         }
 
-        console.log("✅ Estructura de Cassandra completada con éxito.");
+        console.log("✨ Estructura de Cassandra completada con éxito desde cero.");
 
     } catch (error) {
         console.error("❌ Error en la inicialización:", error);

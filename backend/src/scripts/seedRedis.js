@@ -9,6 +9,11 @@ const cargarCombustible = async () => {
     try {
         await connectAll();
 
+        // --- FUNCIÓN DE LIMPIEZA ---
+        console.log('🧹 Limpiando datos previos en Redis...');
+        await ConversionService.limpiarReglas(); 
+        // ---------------------------------
+
         const reglasUniversales = [
         // ==========================================
         // 🇦🇷 DESTINO: ARGENTINA (Escala 1-10)

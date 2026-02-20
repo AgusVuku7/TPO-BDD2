@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Accordion, AccordionItem, Card, Chip, Divider, Spinner } from "@heroui/react";
 import api from "../../services/api"; 
 
-const ConversionMatrix = () => {
+const ConversionMatrix = ({ refreshKey }) => {
   const [rules, setRules] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,6 @@ const ConversionMatrix = () => {
     const fetchRules = async () => {
       try {
         setIsLoading(true);
-        // Realizamos la request al endpoint que creamos en el backend
         const response = await api.get('/conversion/');
         setRules(response.data); 
       } catch (err) {
@@ -23,7 +22,7 @@ const ConversionMatrix = () => {
     };
 
     fetchRules();
-  }, []);
+  }, [refreshKey]);
 
   // Agrupamos las reglas por origen (Lógica de transformación de datos)
   const groupedRules = rules.reduce((acc, rule) => {

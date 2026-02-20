@@ -3,10 +3,16 @@ import { Card, CardBody, CardHeader, Button, Divider, Badge, Progress } from '@h
 import { FileJson, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 
-const RuleImporter = () => {
+const RuleImporter = ({ onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false);
   const [fileData, setFileData] = useState(null); // Array de reglas parseadas
-  const [status, setStatus] = useState({ loading: false, progress: 0, error: null, success: null });
+  const [status, setStatus] = useState({ 
+    loading: false, 
+    progress: 0, 
+    error: null, 
+    success: null,
+    uploadState: 'idle' // 'idle' | 'success' | 'error'
+  });
   const fileInputRef = useRef(null);
 
   // Manejadores de Drag & Drop
@@ -29,7 +35,7 @@ const RuleImporter = () => {
   // Procesamiento del archivo JSON
   const processFile = (file) => {
     if (file.type !== "application/json") {
-      setStatus({ ...status, error: "El archivo debe ser un JSON válido." });
+      setStatus({ ...status, error: "El archivo debe ser un JSON válido.", uploadState: 'error' });
       return;
     }
 
@@ -37,12 +43,17 @@ const RuleImporter = () => {
     reader.onload = (e) => {
       try {
         const json = JSON.parse(e.target.result);
-        // Validamos que sea un array de reglas
         const rulesArray = Array.isArray(json) ? json : [json];
         setFileData(rulesArray);
-        setStatus({ ...status, error: null, success: `Se encontraron ${rulesArray.length} reglas.` });
+        // 2. Al cargar un nuevo archivo válido, reiniciamos el botón a 'idle'
+        setStatus({ 
+          ...status, 
+          error: null, 
+          success: `Se encontraron ${rulesArray.length} reglas.`,
+          uploadState: 'idle' 
+        });
       } catch {
-        setStatus({ ...status, error: "Error al parsear el JSON. Verifica el formato." });
+        setStatus({ ...status, error: "Error al parsear el JSON. Verifica el formato.", uploadState: 'error' });
       }
     };
     reader.readAsText(file);
@@ -50,25 +61,40 @@ const RuleImporter = () => {
 
   const handleUpload = async () => {
     if (!fileData) return;
-    setStatus({ ...status, loading: true, progress: 0 });
+    // Cambiamos a 'idle' por si estaba en error de un intento previo
+    setStatus({ ...status, loading: true, progress: 0, uploadState: 'idle' });
 
     let count = 0;
     const total = fileData.length;
 
     try {
       for (const rule of fileData) {
-        // Reutilizamos tu lógica de guardado en Redis (Append-only)
         await api.post('/conversion/regla', rule);
         count++;
         setStatus(prev => ({ ...prev, progress: Math.round((count / total) * 100) }));
       }
-      setStatus({ loading: false, progress: 100, error: null, success: "¡Todas las reglas han sido publicadas en Redis!" });
+      
+      // 3. Marcamos el uploadState como 'success'
+      setStatus({ 
+        loading: false, 
+        progress: 100, 
+        error: null, 
+        success: "¡Todas las reglas han sido publicadas en Redis!",
+        uploadState: 'success'
+      });
       setFileData(null);
+
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
     } catch (err) {
+      // 4. Marcamos el uploadState como 'error'
       setStatus({ 
         loading: false, 
         progress: 0, 
-        error: `Error en regla ${count + 1}: ${err.response?.data?.error || err.message}` 
+        error: `Error en regla ${count + 1}: ${err.response?.data?.error || err.message}`,
+        uploadState: 'error'
       });
     }
   };
@@ -125,14 +151,25 @@ const RuleImporter = () => {
         )}
 
         <Button 
-          color={fileData ? "primary" : "default"} 
-          className="font-bold py-6"
-          isDisabled={!fileData || status.loading}
+          color={
+            status.uploadState === 'success' ? "success" : 
+            status.uploadState === 'error' ? "danger" : 
+            fileData ? "primary" : "default"
+          } 
+          className="font-bold py-6 text-white"
+          // Deshabilitamos si no hay archivo, EXCEPTO cuando queremos mostrar el mensaje de éxito/error
+          isDisabled={(!fileData && status.uploadState === 'idle') || status.loading}
           isLoading={status.loading}
           onPress={handleUpload}
           fullWidth
         >
-          Iniciar Carga en Base de Datos
+          {/* Renderizado condicional de íconos y texto */}
+          {status.uploadState === 'success' && <CheckCircle2 className="mr-2" size={20} />}
+          {status.uploadState === 'error' && <AlertCircle className="mr-2" size={20} />}
+          
+          {status.uploadState === 'success' ? "Cargado con éxito" :
+            status.uploadState === 'error' ? "Error en la carga" :
+            "Iniciar Carga"}
         </Button>
       </CardBody>
     </Card>

@@ -13,8 +13,8 @@ const GradeConversion = () => {
   const sistemas = [
     { label: "Argentina (1-10)", value: "AR" },
     { label: "Reino Unido (A-F)", value: "UK" },
-    { label: "Estados Unidos (GPA)", value: "US" },
-    { label: "Alemania (1-6)", value: "DE" },
+    { label: "Estados Unidos (0.0-4.0)", value: "US" },
+    { label: "Alemania (1.0-5.0)", value: "DE" },
     { label: "Sudáfrica (Level 1-7)", value: "ZA" }
   ];
 
@@ -119,9 +119,6 @@ const GradeConversion = () => {
             </div>
             <Chip size="sm" variant="flat" color="primary" className="mt-2">
               Versión: {resultado.metadata.version}
-            </Chip>
-            <Chip size="sm" variant="flat" color="secondary">
-              Sincronizado: {resultado.metadata.aplicada_el}
             </Chip>
           </div>
         )}

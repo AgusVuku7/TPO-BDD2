@@ -31,6 +31,8 @@ class RepositorioCassandraAnalitica {
         const instId = institucionId.toString();
         const matId = materiaId.toString();
         const rango = nota >= 7 ? '7-10' : (nota >= 4 ? '4-6' : '0-3');
+        const numAprobado = esAprobado ? 1 : 0;
+        const notaCuadrado = Math.pow(nota, 2);
 
         // 1. Tabla Analítica por Institución
         const q1 = `SELECT suma_notas, total_estudiantes, total_aprobados FROM analitica_por_institucion WHERE institucion_id = ? AND anio_lectivo = ? AND materia_id = ?`;
@@ -85,10 +87,12 @@ class RepositorioCassandraAnalitica {
         );
     }
 
+    // Funciones de obtención (Ya no hace falta la conversión de UUIDs)
     async obtenerDatosPorInstitucion(institucionId, anio) {
         const instId = institucionId.toString();
         const query = 'SELECT * FROM analitica_por_institucion WHERE institucion_id = ? AND anio_lectivo = ?';
-        const result = await getCassandraClient().execute(query, [instId, anio], { prepare: true });
+        // Parseamos el anio a int porque llega como string desde la ruta (req.params.anio)
+        const result = await getCassandraClient().execute(query, [institucionId, parseInt(anio)], { prepare: true });
         return result.rows;
     }
 
@@ -96,6 +100,39 @@ class RepositorioCassandraAnalitica {
         const query = 'SELECT * FROM metricas_desvio_estandar WHERE contexto_id = ? AND anio_lectivo = ?';
         const result = await getCassandraClient().execute(query, [contextoId.toString(), anio], { prepare: true });
         return result.first();
+    }
+
+    async obtenerMetricasInstitucion(institucionId, anio, materiaId) {
+        const client = getCassandraClient(); // Obtención del cliente configurado
+        
+        // Consulta SQL de Cassandra (CQL)
+        const query = `
+            SELECT suma_notas, total_estudiantes, total_aprobados 
+            FROM analitica_por_institucion 
+            WHERE institucion_id = ? AND anio_lectivo = ? AND materia_id = ?
+        `;
+        
+        // IMPORTANTE: Conversión explícita de tipos
+        // Cassandra espera 'text' para los IDs y 'int' para el año
+        const params = [
+            institucionId.toString(), 
+            parseInt(anio), 
+            materiaId.toString()
+        ];
+
+        try {
+            const result = await client.execute(query, params, { prepare: true });
+            
+            // Retornamos el primer resultado o un objeto con valores en cero si no existe
+            return result.first() || { 
+                suma_notas: 0, 
+                total_estudiantes: 0, 
+                total_aprobados: 0 
+            };
+        } catch (error) {
+            console.error('❌ Error al obtener métricas de institución en Cassandra:', error);
+            throw error;
+        }
     }
 }
 

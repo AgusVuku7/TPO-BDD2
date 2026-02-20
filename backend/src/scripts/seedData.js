@@ -14,7 +14,6 @@ const TrayectoriaService = require('../services/TrayectoriaService');
 // 1. DATOS DE PRUEBA (MOCK DATA)
 // ==========================================
 
-// Instituciones con metadatos asimétricos (distintos campos para cada una)
 const institucionesData = [
     { nombre: "Universidad de Buenos Aires", pais: "Argentina", region: "AR", sistema_educativo: "AR", metadata: { fundacion: 1821, tipo: "Pública", sedes: 13 } },
     { nombre: "Massachusetts Institute of Technology", pais: "Estados Unidos", region: "US", sistema_educativo: "US", metadata: { tipo: "Privada", campus: "Tecnológico", presupuesto: "Alto" } },
@@ -30,38 +29,24 @@ const paises = ["Argentina", "Estados Unidos", "Reino Unido", "Alemania", "Espa�
 const tiposBeca = ["Media Beca", "Beca Completa", "Beca Deportiva", "Ayuda Económica"];
 const modalidadesMateria = ["Presencial", "Virtual", "Híbrida"];
 
-// Funciones para generar metadatos aleatorios y asimétricos
 const generarMetadataEstudiante = () => {
     const meta = {};
-    // 60% de chances de tener registrada la beca
     if (Math.random() > 0.4) meta.beca = tiposBeca[Math.floor(Math.random() * tiposBeca.length)];
-    // 80% de chances de tener el año de ingreso
     if (Math.random() > 0.2) meta.anio_ingreso = 2020 + Math.floor(Math.random() * 4);
-    // 70% de chances de tener el promedio del secundario
     if (Math.random() > 0.3) meta.promedio_secundario = parseFloat((7 + Math.random() * 3).toFixed(2));
-    // 50% de chances de registrar si hace deportes ("Sí" o "No")
     if (Math.random() > 0.5) meta.hace_deportes = Math.random() > 0.5 ? "Sí" : "No";
-    // 40% de chances de registrar si trabaja
     if (Math.random() > 0.6) meta.trabaja = Math.random() > 0.5 ? "Part-time" : "Full-time";
-    
     return meta;
 };
 
 const generarMetadataMateria = () => {
     const meta = {};
     const creditos = 3 + Math.floor(Math.random() * 6);
-    
-    // 90% de chances de tener créditos
     if (Math.random() > 0.1) meta.creditos = creditos;
-    // 70% de chances de tener horas totales
     if (Math.random() > 0.3) meta.horas_totales = creditos * 16 + (Math.floor(Math.random() * 5) * 4);
-    // 60% de chances de tener modalidad
     if (Math.random() > 0.4) meta.modalidad = modalidadesMateria[Math.floor(Math.random() * modalidadesMateria.length)];
-    // 50% de chances de tener cupo máximo
     if (Math.random() > 0.5) meta.cupo_maximo = 30 + Math.floor(Math.random() * 70);
-    // 30% de chances de registrar si requiere laboratorio
     if (Math.random() > 0.7) meta.requiere_laboratorio = "Sí";
-
     return meta;
 };
 
@@ -76,9 +61,7 @@ async function seedDatabase() {
         await connectAll();
         console.log("✅ Bases de datos conectadas con éxito!");
 
-        // -----------------------------------------------------
         // FASE 0: LIMPIEZA TOTAL
-        // -----------------------------------------------------
         console.log("\n🧹 Limpiando bases de datos...");
         await Institution.deleteMany({});
         await Subject.deleteMany({});
@@ -92,9 +75,7 @@ async function seedDatabase() {
             await session.close();
         }
 
-        // -----------------------------------------------------
         // FASE 1: CREAR INSTITUCIONES
-        // -----------------------------------------------------
         console.log("\n🏢 Creando 5 Instituciones...");
         const institucionesCreadas = [];
         for (const inst of institucionesData) {
@@ -102,9 +83,7 @@ async function seedDatabase() {
             institucionesCreadas.push(nuevaInst); 
         }
 
-        // -----------------------------------------------------
         // FASE 2: CREAR 20 ESTUDIANTES
-        // -----------------------------------------------------
         console.log("\n🎓 Creando 20 Estudiantes con metadata dinámica asimétrica...");
         const estudiantesCreados = [];
         for (let i = 1; i <= 20; i++) {
@@ -114,15 +93,13 @@ async function seedDatabase() {
                 documento: `DOC-${Math.floor(Math.random() * 90000000) + 10000000}`,
                 mail: `estudiante${i}@edugrade.com`,
                 pais: paises[Math.floor(Math.random() * paises.length)],
-                metadata: generarMetadataEstudiante() // Cada estudiante tendrá campos distintos
+                metadata: generarMetadataEstudiante() 
             };
             const nuevoEstudiante = await OnboardingService.registrarEstudiante(estudiante);
             estudiantesCreados.push(nuevoEstudiante);
         }
 
-        // -----------------------------------------------------
         // FASE 3: CREAR 50 MATERIAS
-        // -----------------------------------------------------
         console.log("\n📚 Creando 50 Materias con metadata variable...");
         const materiasBase = [
             "Álgebra", "Análisis Matemático I", "Análisis Matemático II", "Física I", "Física II",
@@ -140,7 +117,7 @@ async function seedDatabase() {
                     nombre: `${nombreMateria} (${inst.sistema_educativo})`,
                     nivel: i < 5 ? "Básico" : "Avanzado",
                     institucion: inst._id,
-                    metadata: generarMetadataMateria() // Cada materia tendrá campos distintos
+                    metadata: generarMetadataMateria() 
                 };
                 
                 const nuevaMateria = await OnboardingService.registrarMateria(materiaData);
@@ -148,9 +125,7 @@ async function seedDatabase() {
             }
         }
 
-        // -----------------------------------------------------
         // FASE 4: CORRELATIVIDADES 
-        // -----------------------------------------------------
         console.log("\n🔗 Generando relaciones de Correlatividad...");
         for (const instId in materiasPorInstitucion) {
             const m = materiasPorInstitucion[instId];
@@ -162,9 +137,7 @@ async function seedDatabase() {
             await OnboardingService.agregarCorrelatividad(m[9]._id, m[6]._id); // Redes -> Estructuras
         }
 
-        // -----------------------------------------------------
         // FASE 5: EQUIVALENCIAS MASIVAS (Unidireccionales)
-        // -----------------------------------------------------
         console.log("\n🌐 Generando relaciones de Equivalencia Masivas (Unidireccionales)...");
         for (let idxMateria = 0; idxMateria < materiasBase.length; idxMateria++) {
             for (let i = 0; i < institucionesCreadas.length; i++) {
@@ -182,9 +155,7 @@ async function seedDatabase() {
             }
         }
 
-        // -----------------------------------------------------
         // FASE 6: TRAYECTORIAS Y CURSADAS 
-        // -----------------------------------------------------
         console.log("\n📈 Generando Historial Académico (ASISTE y CURSO)...");
         for (const est of estudiantesCreados) {
             const randomInst = institucionesCreadas[Math.floor(Math.random() * institucionesCreadas.length)];
@@ -196,14 +167,19 @@ async function seedDatabase() {
             });
 
             const materiasInst = materiasPorInstitucion[randomInst._id];
-            const cantidadMaterias = 3 + Math.floor(Math.random() * 3); 
+            
+            // Hacemos que cursen más materias para llenar de datos Cassandra
+            const cantidadMaterias = 5 + Math.floor(Math.random() * 4); // Cursan entre 5 y 8 materias
             
             for(let k = 0; k < cantidadMaterias; k++) {
-                const mat = materiasInst[k]; 
+                // ELEGIMOS UNA MATERIA Y UN AÑO DE FORMA TOTALMENTE ALEATORIA
+                const indiceMateria = Math.floor(Math.random() * materiasInst.length);
+                const mat = materiasInst[indiceMateria]; 
+
                 await TrayectoriaService.registrarTrayectoriaMateria(est._id, {
                     materiaId: mat._id,
-                    nota: 6 + Math.floor(Math.random() * 5), // Notas de 6 a 10
-                    anio: 2022 + k
+                    nota: 4 + Math.floor(Math.random() * 7), // Notas de 4 a 10 para variar aprobaciones
+                    anio: 2022 + Math.floor(Math.random() * 3) // Año random: 2022, 2023 o 2024
                 });
             }
         }

@@ -38,6 +38,19 @@ class AnaliticaService {
             totalAlumnos: f.total_estudiantes
         }));
     }
+
+    // --- SERVICIO PARA AUDITORÍA --- \\
+    async getAuditoria(limite) {
+        const eventos = await CassandraRepo.obtenerEventosAuditoria(limite);
+        return eventos.map(e => ({
+            id: e.evento_id.toString(),
+            tipoEntidad: e.tipo_entidad,
+            accion: e.accion,
+            entidadId: e.entidad_id,
+            fecha: e.fecha_hora,
+            detalles: JSON.parse(e.detalles || '{}')
+        }));
+    }
 }
 
 module.exports = new AnaliticaService();

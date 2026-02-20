@@ -8,6 +8,7 @@ import RuleManager from './components/calificaciones/RuleManager';
 import MateriaDetail from './components/materia/MateriaDetail'
 import AnaliticaDashboard from './components/analitica/AnaliticaDashboard';
 import ConversionMatrix from './components/calificaciones/ConversionMatrix';
+import AuditoriaPanel from './components/analitica/AuditoriaPanel';
 
 function App() {
   const [view, setView] = useState('students');
@@ -67,7 +68,11 @@ function App() {
         )}
 
         {view === 'analiticas' && (
-          <AnaliticaDashboard />
+          <div className="flex flex-col gap-4">
+            <AnaliticaDashboard />
+            <Divider className="my-6" />
+            <AuditoriaPanel />
+          </div>
         )}
 
         {view === 'administracion' && (

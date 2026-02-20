@@ -6,41 +6,84 @@ import {
 } from "@heroui/react";
 import { 
   BarChart3, TrendingUp, AlertTriangle, CheckCircle2, 
-  Users, Calendar, School, RefreshCcw 
+  Users, School, RefreshCcw 
 } from "lucide-react";
 import api from '../../services/api';
 
-const AnaliticaDashboard = ({ defaultInstId = "INST-AR-001" }) => {
+// 1. Quitamos defaultInstId de los parámetros
+const AnaliticaDashboard = () => {
   const [reporte, setReporte] = useState([]);
   const [desvio, setDesvio] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [anio, setAnio] = useState("2026");
+  const [anio, setAnio] = useState("2022");
+  
+  // 2. Nuevos estados para manejar las instituciones
+  const [instituciones, setInstituciones] = useState([]);
+  const [selectedInst, setSelectedInst] = useState("");
+  const [loadingInst, setLoadingInst] = useState(true);
 
+  // 3. Cargar la lista de instituciones al montar el componente
+  useEffect(() => {
+    const fetchInstituciones = async () => {
+      try {
+        const res = await api.get('/institucion'); 
+        
+        // ¡Aquí está la corrección! Accedemos al arreglo dentro de res.data.instituciones
+        const institucionesArray = res.data.instituciones || [];
+        setInstituciones(institucionesArray);
+        
+        // Autoseleccionamos la primera si existe
+        if (institucionesArray.length > 0) {
+          setSelectedInst(institucionesArray[0]._id); 
+        }
+      } catch (error) {
+        console.error("Error cargando instituciones:", error);
+      } finally {
+        setLoadingInst(false);
+      }
+    };
+    
+    fetchInstituciones();
+  }, []);
+
+  // 4. Actualizamos la función para que use selectedInst
   const fetchAnalitica = useCallback(async () => {
+    if (!selectedInst) return; // Si aún no hay institución seleccionada, no hacemos nada
+
     setLoading(true);
     try {
-      // Llamadas en paralelo a tus nuevos endpoints de Cassandra
       const [resReporte, resDesvio] = await Promise.all([
-        api.get(`/analitica/institucion/${defaultInstId}/${anio}`),
-        api.get(`/analitica/desvios/${defaultInstId}/${anio}`)
+        api.get(`/analitica/institucion/${selectedInst}/${anio}`),
+        api.get(`/analitica/desvios/${selectedInst}/${anio}`)
       ]);
-      setReporte(resReporte.data);
-      setDesvio(resDesvio.data);
+      
+      setReporte(Array.isArray(resReporte.data) ? resReporte.data : []);
+      
+      if (resDesvio.data.mensaje) {
+        setDesvio(null); 
+      } else {
+        setDesvio(resDesvio.data);
+      }
     } catch (error) {
       console.error("Error cargando analítica:", error);
+      setReporte([]);
+      setDesvio(null);
     } finally {
       setLoading(false);
     }
-  }, [defaultInstId, anio]);
+  }, [selectedInst, anio]);
 
+  // Se ejecuta la búsqueda en Cassandra cuando cambia la institución seleccionada o el año
   useEffect(() => {
-    fetchAnalitica();
-  }, [fetchAnalitica]);
+    if (selectedInst) {
+      fetchAnalitica();
+    }
+  }, [selectedInst, anio, fetchAnalitica]);
 
   return (
     <div className="flex flex-col gap-6 p-4">
       {/* HEADER Y FILTROS */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100 gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-lg">
             <BarChart3 className="text-blue-600" size={24} />
@@ -51,17 +94,39 @@ const AnaliticaDashboard = ({ defaultInstId = "INST-AR-001" }) => {
           </div>
         </div>
         
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-3 items-center w-full md:w-auto">
+          {/* 5. Nuevo Select para Instituciones */}
           <Select 
+            label="Institución"
+            labelPlacement="outside"
+            placeholder="Selecciona una institución"
+            className="w-full md:w-64"
+            isLoading={loadingInst}
+            selectedKeys={selectedInst ? [selectedInst] : []}
+            onSelectionChange={(keys) => setSelectedInst(Array.from(keys)[0])}
+          >
+            {instituciones.map((inst) => (
+              <SelectItem key={inst._id || inst.id} textValue={inst.nombre}>
+                {inst.nombre}
+              </SelectItem>
+            ))}
+          </Select>
+
+          <Select 
+            label="Año"
             labelPlacement="outside"
             className="w-32"
             selectedKeys={[anio]}
             onSelectionChange={(keys) => setAnio(Array.from(keys)[0])}
           >
+            <SelectItem key="2022" textValue="2022">2022</SelectItem>
+            <SelectItem key="2023" textValue="2023">2023</SelectItem>
+            <SelectItem key="2024" textValue="2024">2024</SelectItem>
             <SelectItem key="2025" textValue="2025">2025</SelectItem>
             <SelectItem key="2026" textValue="2026">2026</SelectItem>
           </Select>
-          <Button isIconOnly variant="flat" onPress={fetchAnalitica} isLoading={loading}>
+
+          <Button isIconOnly variant="flat" onPress={fetchAnalitica} isLoading={loading} className="mt-6">
             <RefreshCcw size={18} />
           </Button>
         </div>
@@ -100,7 +165,9 @@ const AnaliticaDashboard = ({ defaultInstId = "INST-AR-001" }) => {
             <div className="w-full">
               <p className="text-default-500 text-tiny uppercase font-bold">Tasa de Aprobación Global</p>
               <h2 className="text-3xl font-black text-slate-800">
-                {reporte.length > 0 ? (reporte.reduce((acc, curr) => acc + parseFloat(curr.tasaAprobacion), 0) / reporte.length).toFixed(1) : 0}%
+                {reporte && reporte.length > 0 
+                  ? (reporte.reduce((acc, curr) => acc + parseFloat(curr.tasaAprobacion || 0), 0) / reporte.length).toFixed(1) 
+                  : "0.0"}%
               </h2>
             </div>
           </CardBody>

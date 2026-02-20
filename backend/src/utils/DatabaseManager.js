@@ -62,7 +62,7 @@ const connectCassandra = async () => {
   try {
     const contactPoints = (process.env.CASSANDRA_CONTACT_POINTS || 'localhost').split(',');
     const localDataCenter = process.env.CASSANDRA_DC || 'datacenter1';
-    const keyspace = process.env.CASSANDRA_KEYSPACE || 'edugrade';
+    const keyspace = process.env.CASSANDRA_KEYSPACE || 'edugrade_analitica';
 
     cassandraClient = new cassandra.Client({
       contactPoints: contactPoints,

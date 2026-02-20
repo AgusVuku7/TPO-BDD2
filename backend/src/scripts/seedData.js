@@ -8,26 +8,62 @@ const Institution = require('../models/institucion');
 const Subject = require('../models/materia');
 const Student = require('../models/estudiante');
 const OnboardingService = require('../services/OnboardingService');
-const TrayectoriaService = require('../services/TrayectoriaService'); // NUEVO: Para el historial académico
+const TrayectoriaService = require('../services/TrayectoriaService');
 
 // ==========================================
 // 1. DATOS DE PRUEBA (MOCK DATA)
 // ==========================================
 
-// REGLA APLICADA: 'region' ahora coincide con 'sistema_educativo'
+// Instituciones con metadatos asimétricos (distintos campos para cada una)
 const institucionesData = [
-    { _id: "INST-AR-UBA", nombre: "Universidad de Buenos Aires", pais: "Argentina", region: "AR", sistema_educativo: "AR" },
-    { _id: "INST-US-MIT", nombre: "Massachusetts Institute of Technology", pais: "Estados Unidos", region: "US", sistema_educativo: "US" },
-    { _id: "INST-UK-OXF", nombre: "University of Oxford", pais: "Reino Unido", region: "UK", sistema_educativo: "UK" },
-    { _id: "INST-DE-TUM", nombre: "Technical University of Munich", pais: "Alemania", region: "DE", sistema_educativo: "DE" },
-    { _id: "INST-AR-UTN", nombre: "Universidad Tecnológica Nacional", pais: "Argentina", region: "AR", sistema_educativo: "AR" }
+    { nombre: "Universidad de Buenos Aires", pais: "Argentina", region: "AR", sistema_educativo: "AR", metadata: { fundacion: 1821, tipo: "Pública", sedes: 13 } },
+    { nombre: "Massachusetts Institute of Technology", pais: "Estados Unidos", region: "US", sistema_educativo: "US", metadata: { tipo: "Privada", campus: "Tecnológico", presupuesto: "Alto" } },
+    { nombre: "University of Oxford", pais: "Reino Unido", region: "UK", sistema_educativo: "UK", metadata: { fundacion: 1096, colegios_afiliados: 39 } },
+    { nombre: "Technical University of Munich", pais: "Alemania", region: "DE", sistema_educativo: "DE", metadata: { tipo: "Pública", idioma_principal: "Alemán", enfoque: "Investigación" } },
+    { nombre: "Universidad Tecnológica Nacional", pais: "Argentina", region: "AR", sistema_educativo: "AR", metadata: { fundacion: 1948, facultades_regionales: 30, tipo: "Pública" } }
 ];
 
 const nombres = ["Ana", "Carlos", "Lucía", "Miguel", "Sofía", "Juan", "Valentina", "Pedro", "Camila", "Diego", "María", "Joaquín", "Martina", "Mateo", "Laura", "Tomás", "Florencia", "Lucas", "Julieta", "Nicolás"];
 const apellidos = ["García", "Fernández", "López", "Martínez", "González", "Pérez", "Rodríguez", "Sánchez", "Ramírez", "Cruz", "Gómez", "Díaz", "Álvarez", "Romero", "Ruiz", "Alonso", "Torres", "Domínguez", "Vázquez", "Blanco"];
 const paises = ["Argentina", "Estados Unidos", "Reino Unido", "Alemania", "España", "Colombia", "México", "Chile", "Uruguay", "Perú"];
 
-const obtenerAbreviacion = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, '').toUpperCase().substring(0, 3);
+const tiposBeca = ["Media Beca", "Beca Completa", "Beca Deportiva", "Ayuda Económica"];
+const modalidadesMateria = ["Presencial", "Virtual", "Híbrida"];
+
+// Funciones para generar metadatos aleatorios y asimétricos
+const generarMetadataEstudiante = () => {
+    const meta = {};
+    // 60% de chances de tener registrada la beca
+    if (Math.random() > 0.4) meta.beca = tiposBeca[Math.floor(Math.random() * tiposBeca.length)];
+    // 80% de chances de tener el año de ingreso
+    if (Math.random() > 0.2) meta.anio_ingreso = 2020 + Math.floor(Math.random() * 4);
+    // 70% de chances de tener el promedio del secundario
+    if (Math.random() > 0.3) meta.promedio_secundario = parseFloat((7 + Math.random() * 3).toFixed(2));
+    // 50% de chances de registrar si hace deportes ("Sí" o "No")
+    if (Math.random() > 0.5) meta.hace_deportes = Math.random() > 0.5 ? "Sí" : "No";
+    // 40% de chances de registrar si trabaja
+    if (Math.random() > 0.6) meta.trabaja = Math.random() > 0.5 ? "Part-time" : "Full-time";
+    
+    return meta;
+};
+
+const generarMetadataMateria = () => {
+    const meta = {};
+    const creditos = 3 + Math.floor(Math.random() * 6);
+    
+    // 90% de chances de tener créditos
+    if (Math.random() > 0.1) meta.creditos = creditos;
+    // 70% de chances de tener horas totales
+    if (Math.random() > 0.3) meta.horas_totales = creditos * 16 + (Math.floor(Math.random() * 5) * 4);
+    // 60% de chances de tener modalidad
+    if (Math.random() > 0.4) meta.modalidad = modalidadesMateria[Math.floor(Math.random() * modalidadesMateria.length)];
+    // 50% de chances de tener cupo máximo
+    if (Math.random() > 0.5) meta.cupo_maximo = 30 + Math.floor(Math.random() * 70);
+    // 30% de chances de registrar si requiere laboratorio
+    if (Math.random() > 0.7) meta.requiere_laboratorio = "Sí";
+
+    return meta;
+};
 
 // ==========================================
 // 2. FUNCIÓN PRINCIPAL DE SEEDING
@@ -63,23 +99,22 @@ async function seedDatabase() {
         const institucionesCreadas = [];
         for (const inst of institucionesData) {
             const nuevaInst = await OnboardingService.registrarInstitucion(inst);
-            institucionesCreadas.push(nuevaInst);
+            institucionesCreadas.push(nuevaInst); 
         }
 
         // -----------------------------------------------------
         // FASE 2: CREAR 20 ESTUDIANTES
         // -----------------------------------------------------
-        console.log("\n🎓 Creando 20 Estudiantes...");
+        console.log("\n🎓 Creando 20 Estudiantes con metadata dinámica asimétrica...");
         const estudiantesCreados = [];
         for (let i = 1; i <= 20; i++) {
-            const idConsecutivo = String(i).padStart(3, '0');
             const estudiante = {
-                _id: `EST-${idConsecutivo}`, 
                 nombre: nombres[Math.floor(Math.random() * nombres.length)],
                 apellido: apellidos[Math.floor(Math.random() * apellidos.length)],
                 documento: `DOC-${Math.floor(Math.random() * 90000000) + 10000000}`,
-                mail: `estudiante${idConsecutivo}@edugrade.com`,
-                pais: paises[Math.floor(Math.random() * paises.length)]
+                mail: `estudiante${i}@edugrade.com`,
+                pais: paises[Math.floor(Math.random() * paises.length)],
+                metadata: generarMetadataEstudiante() // Cada estudiante tendrá campos distintos
             };
             const nuevoEstudiante = await OnboardingService.registrarEstudiante(estudiante);
             estudiantesCreados.push(nuevoEstudiante);
@@ -88,43 +123,37 @@ async function seedDatabase() {
         // -----------------------------------------------------
         // FASE 3: CREAR 50 MATERIAS
         // -----------------------------------------------------
-        console.log("\n📚 Creando 50 Materias...");
+        console.log("\n📚 Creando 50 Materias con metadata variable...");
         const materiasBase = [
             "Álgebra", "Análisis Matemático I", "Análisis Matemático II", "Física I", "Física II",
             "Programación I", "Estructuras de Datos", "Bases de Datos", "Ingeniería de Software", "Redes"
         ];
 
         const materiasPorInstitucion = {}; 
-        let materiaContador = 1;
 
         for (const inst of institucionesCreadas) {
-            materiasPorInstitucion[inst._id] = [];
+            materiasPorInstitucion[inst._id] = []; 
             for (let i = 0; i < 10; i++) {
                 const nombreMateria = materiasBase[i];
-                const abreviacion = obtenerAbreviacion(nombreMateria);
-                const numeroId = String(materiaContador).padStart(3, '0');
                 
                 const materiaData = {
-                    _id: `MAT-${abreviacion}-${numeroId}`, // Ajustado formato MAT-000
                     nombre: `${nombreMateria} (${inst.sistema_educativo})`,
                     nivel: i < 5 ? "Básico" : "Avanzado",
                     institucion: inst._id,
-                    metadata: { creditos: 5, horas: 120 }
+                    metadata: generarMetadataMateria() // Cada materia tendrá campos distintos
                 };
                 
                 const nuevaMateria = await OnboardingService.registrarMateria(materiaData);
                 materiasPorInstitucion[inst._id].push(nuevaMateria);
-                materiaContador++;
             }
         }
 
         // -----------------------------------------------------
-        // FASE 4: CORRELATIVIDADES (GRAFO MÁS DENSO)
+        // FASE 4: CORRELATIVIDADES 
         // -----------------------------------------------------
         console.log("\n🔗 Generando relaciones de Correlatividad...");
         for (const instId in materiasPorInstitucion) {
             const m = materiasPorInstitucion[instId];
-            // Índices: 0:Alg, 1:Ana1, 2:Ana2, 3:Fis1, 4:Fis2, 5:Prog1, 6:Estructuras, 7:BD, 8:IngSoft, 9:Redes
             await OnboardingService.agregarCorrelatividad(m[2]._id, m[1]._id); // Ana 2 -> Ana 1
             await OnboardingService.agregarCorrelatividad(m[4]._id, m[3]._id); // Fis 2 -> Fis 1
             await OnboardingService.agregarCorrelatividad(m[6]._id, m[5]._id); // Estructuras -> Prog 1
@@ -134,11 +163,10 @@ async function seedDatabase() {
         }
 
         // -----------------------------------------------------
-        // FASE 5: EQUIVALENCIAS MASIVAS (Mismo nombre en todos los países)
+        // FASE 5: EQUIVALENCIAS MASIVAS (Unidireccionales)
         // -----------------------------------------------------
-        console.log("\n🌐 Generando relaciones de Equivalencia Masivas...");
+        console.log("\n🌐 Generando relaciones de Equivalencia Masivas (Unidireccionales)...");
         for (let idxMateria = 0; idxMateria < materiasBase.length; idxMateria++) {
-            // Cruzamos cada institución con las demás para la misma materia
             for (let i = 0; i < institucionesCreadas.length; i++) {
                 for (let j = i + 1; j < institucionesCreadas.length; j++) {
                     const instA = institucionesCreadas[i]._id;
@@ -149,19 +177,16 @@ async function seedDatabase() {
                     
                     const porcentaje = 80 + Math.floor(Math.random() * 21); // Random 80% - 100%
                     
-                    // Ida y vuelta
                     await OnboardingService.registrarEquivalencia(matA._id, matB._id, porcentaje);
-                    await OnboardingService.registrarEquivalencia(matB._id, matA._id, porcentaje);
                 }
             }
         }
 
         // -----------------------------------------------------
-        // FASE 6: TRAYECTORIAS Y CURSADAS (Historial Académico)
+        // FASE 6: TRAYECTORIAS Y CURSADAS 
         // -----------------------------------------------------
         console.log("\n📈 Generando Historial Académico (ASISTE y CURSO)...");
         for (const est of estudiantesCreados) {
-            // Le asignamos una institución aleatoria
             const randomInst = institucionesCreadas[Math.floor(Math.random() * institucionesCreadas.length)];
             
             await TrayectoriaService.registrarTrayectoriaInstitucion(est._id, {
@@ -170,12 +195,10 @@ async function seedDatabase() {
                 hasta: 2026
             });
 
-            // Le aprobamos entre 3 y 5 materias aleatorias de esa institución
             const materiasInst = materiasPorInstitucion[randomInst._id];
             const cantidadMaterias = 3 + Math.floor(Math.random() * 3); 
             
             for(let k = 0; k < cantidadMaterias; k++) {
-                // Agarramos materias en orden (para que tenga sentido con las correlativas)
                 const mat = materiasInst[k]; 
                 await TrayectoriaService.registrarTrayectoriaMateria(est._id, {
                     materiaId: mat._id,

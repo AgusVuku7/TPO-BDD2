@@ -46,13 +46,22 @@ class ConversionService {
 
     // 3. Aplicación de la lógica de mapeo (Híbrida: Letras y Números)
     const mapeo = regla.mapping.find(m => {
-      // Coincidencia exacta (ej: 'A*' de UK)
-      if (notaNormalizada === m.min.toString().toUpperCase()) return true;
+      // A. Coincidencia exacta con min o max (Ideal para 'A*' o los extremos)
+      if (notaNormalizada === m.min.toString().toUpperCase() || 
+          notaNormalizada === m.max.toString().toUpperCase()) {
+        return true;
+      }
 
-      // Coincidencia por rango numérico (ej: 7.5 de Argentina)
+      // B. Coincidencia por rango numérico (ej: 7.5 de Argentina)
       if (!isNaN(notaNum) && typeof m.min === 'number' && typeof m.max === 'number') {
         return notaNum >= m.min && notaNum <= m.max;
       }
+
+      // C. Coincidencia por rango de letras (ej: nota 'B' en un rango min: 'A', max: 'C')
+      if (isNaN(notaNum) && typeof m.min === 'string' && typeof m.max === 'string') {
+        return notaNormalizada >= m.min.toUpperCase() && notaNormalizada <= m.max.toUpperCase();
+      }
+
       return false;
     });
 

@@ -6,6 +6,24 @@ class ConversionService {
     this.localCache = {}; // Cumple con el requisito de "Cacheo de conversiones frecuentes"
   }
 
+  async limpiarReglas() {
+    try {
+      const redisClient = getRedisClient();
+      
+      // Borra todas las llaves de la base de datos actual en Redis
+      // Como usas la versión 5.10.0 de la librería 'redis', es una función asíncrona.
+      await redisClient.flushDb();
+      
+      // Es fundamental vaciar también el caché en memoria del servicio
+      this.localCache = {};
+      
+      console.log('🗑️ Redis y caché local vaciados correctamente.');
+    } catch (error) {
+      console.error('❌ Error al limpiar Redis:', error);
+      throw error;
+    }
+  }
+
   // RF2: Registro de nuevas normativas con versionado
   async guardarRegla(datosRegla) {
     const nuevaRegla = new Regla(datosRegla);
@@ -71,8 +89,6 @@ class ConversionService {
     return {
       resultado: mapeo.result,
       label: mapeo.label,
-      normativa: regla.normativa, // Registro del criterio normativo aplicado
-      organismo: regla.organismo, // Dependencia del organismo oficial
       metadata: { 
         version: regla.version,
         aplicada_el: new Date(regla.timestamp).toLocaleDateString() 

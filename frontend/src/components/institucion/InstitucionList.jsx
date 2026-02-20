@@ -49,10 +49,8 @@ const InstitucionList = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar esta institución?')) {
-      await api.delete(`/institucion/${id}`);
-      load();
-    }
+    await api.delete(`/institucion/${id}`);
+    load();
   };
 
   return (

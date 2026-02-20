@@ -11,8 +11,8 @@ class OnboardingService {
     //Replicamos en Neo4j
     try {
       await GraphRepository.crearEstudiante(
-        estudianteMongo._id,       //Pasamos el ID
-        estudianteMongo.nombre,    //Pasamos el Nombre
+        estudianteMongo._id.toString(),
+        estudianteMongo.nombre,
       );
     } catch (error) {
       console.error('⚠️ Error sincronizando estudiante con Neo4j:', error.message);
@@ -58,7 +58,7 @@ class OnboardingService {
     //Replicamos en Neo4j
     try {
       await GraphRepository.crearInstitucion(
-        institucionMongo._id,
+        institucionMongo._id.toString(),
         institucionMongo.nombre,
         institucionMongo.pais
       );
@@ -108,7 +108,7 @@ class OnboardingService {
     //Replicamos en Neo4j
     try {
       await GraphRepository.crearMateria(
-        materiaMongo._id,
+        materiaMongo._id.toString(),
         materiaMongo.nombre,
         inst.pais //Sacamos el país de la institución que buscamos arriba
       );

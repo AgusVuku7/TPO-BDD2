@@ -53,4 +53,14 @@ Ir a github de google y click en Compare and pull request, seguir..
 // TRAER
 git pull origin main
 
+//---------------
+DATA SEEDING:
 
+// 1. LEVANTAR EL PROYECTO (Si no está corriendo ya)
+docker-compose up --build // levanta los contenedores (las bases de datos tienen que estar listas)
+
+// 2. CORRER EL SCRIPT (Abrir una terminal nueva en la raíz del proyecto)
+docker-compose exec backend node src/scripts/seedData.js // formatea la base y genera los datos de prueba
+
+// 3. ACTUALIZAR FRONTEND
+// ir al navegador y apretar F5 para ver los cambios reflejados

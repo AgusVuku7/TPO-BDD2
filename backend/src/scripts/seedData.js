@@ -84,7 +84,7 @@ async function seedDatabase() {
         }
 
         // FASE 2: CREAR 20 ESTUDIANTES
-        console.log("\n🎓 Creando 20 Estudiantes con metadata dinámica asimétrica...");
+        console.log("\n🎓 Creando 20 Estudiantes...");
         const estudiantesCreados = [];
         for (let i = 1; i <= 20; i++) {
             const estudiante = {
@@ -100,7 +100,7 @@ async function seedDatabase() {
         }
 
         // FASE 3: CREAR 50 MATERIAS
-        console.log("\n📚 Creando 50 Materias con metadata variable...");
+        console.log("\n📚 Creando 50 Materias...");
         const materiasBase = [
             "Álgebra", "Análisis Matemático I", "Análisis Matemático II", "Física I", "Física II",
             "Programación I", "Estructuras de Datos", "Bases de Datos", "Ingeniería de Software", "Redes"
@@ -129,15 +129,15 @@ async function seedDatabase() {
         console.log("\n🔗 Generando relaciones de Correlatividad...");
         for (const instId in materiasPorInstitucion) {
             const m = materiasPorInstitucion[instId];
-            await OnboardingService.agregarCorrelatividad(m[2]._id, m[1]._id); // Ana 2 -> Ana 1
-            await OnboardingService.agregarCorrelatividad(m[4]._id, m[3]._id); // Fis 2 -> Fis 1
-            await OnboardingService.agregarCorrelatividad(m[6]._id, m[5]._id); // Estructuras -> Prog 1
-            await OnboardingService.agregarCorrelatividad(m[7]._id, m[5]._id); // BD -> Prog 1
-            await OnboardingService.agregarCorrelatividad(m[8]._id, m[7]._id); // Ing Soft -> BD
-            await OnboardingService.agregarCorrelatividad(m[9]._id, m[6]._id); // Redes -> Estructuras
+            await OnboardingService.agregarCorrelatividad(m[2]._id, m[1]._id); 
+            await OnboardingService.agregarCorrelatividad(m[4]._id, m[3]._id); 
+            await OnboardingService.agregarCorrelatividad(m[6]._id, m[5]._id); 
+            await OnboardingService.agregarCorrelatividad(m[7]._id, m[5]._id); 
+            await OnboardingService.agregarCorrelatividad(m[8]._id, m[7]._id); 
+            await OnboardingService.agregarCorrelatividad(m[9]._id, m[6]._id); 
         }
 
-        // FASE 5: EQUIVALENCIAS MASIVAS (Unidireccionales)
+        // FASE 5: EQUIVALENCIAS MASIVAS 
         console.log("\n🌐 Generando relaciones de Equivalencia Masivas (Unidireccionales)...");
         for (let idxMateria = 0; idxMateria < materiasBase.length; idxMateria++) {
             for (let i = 0; i < institucionesCreadas.length; i++) {
@@ -148,7 +148,7 @@ async function seedDatabase() {
                     const matA = materiasPorInstitucion[instA][idxMateria];
                     const matB = materiasPorInstitucion[instB][idxMateria];
                     
-                    const porcentaje = 80 + Math.floor(Math.random() * 21); // Random 80% - 100%
+                    const porcentaje = 80 + Math.floor(Math.random() * 21); 
                     
                     await OnboardingService.registrarEquivalencia(matA._id, matB._id, porcentaje);
                 }
@@ -168,18 +168,18 @@ async function seedDatabase() {
 
             const materiasInst = materiasPorInstitucion[randomInst._id];
             
-            // Hacemos que cursen más materias para llenar de datos Cassandra
-            const cantidadMaterias = 5 + Math.floor(Math.random() * 4); // Cursan entre 5 y 8 materias
+            // Cada alumno cursa entre 8 y 10 materias de su institución para maximizar el cruce de estudiantes
+            const cantidadMaterias = 8 + Math.floor(Math.random() * 3); 
             
-            for(let k = 0; k < cantidadMaterias; k++) {
-                // ELEGIMOS UNA MATERIA Y UN AÑO DE FORMA TOTALMENTE ALEATORIA
-                const indiceMateria = Math.floor(Math.random() * materiasInst.length);
-                const mat = materiasInst[indiceMateria]; 
-
+            // Mezclamos el array para que no cursen la misma materia dos veces por accidente
+            const materiasMezcladas = [...materiasInst].sort(() => 0.5 - Math.random());
+            const materiasElegidas = materiasMezcladas.slice(0, cantidadMaterias);
+            
+            for(const mat of materiasElegidas) {
                 await TrayectoriaService.registrarTrayectoriaMateria(est._id, {
                     materiaId: mat._id,
-                    nota: 4 + Math.floor(Math.random() * 7), // Notas de 4 a 10 para variar aprobaciones
-                    anio: 2022 + Math.floor(Math.random() * 5) // Año random: 2022 - 2026
+                    nota: 1 + Math.floor(Math.random() * 10), // Notas de 1 a 10 (aprobados y desaprobados)
+                    anio: 2022 + Math.floor(Math.random() * 5) // Año random: 2022 a 2026
                 });
             }
         }

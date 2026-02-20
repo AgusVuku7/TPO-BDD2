@@ -15,7 +15,7 @@ const AnaliticaDashboard = () => {
   const [reporte, setReporte] = useState([]);
   const [desvio, setDesvio] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [anio, setAnio] = useState("2026");
+  const [anio, setAnio] = useState("2022");
   
   // 2. Nuevos estados para manejar las instituciones
   const [instituciones, setInstituciones] = useState([]);
@@ -119,6 +119,9 @@ const AnaliticaDashboard = () => {
             selectedKeys={[anio]}
             onSelectionChange={(keys) => setAnio(Array.from(keys)[0])}
           >
+            <SelectItem key="2022" textValue="2022">2022</SelectItem>
+            <SelectItem key="2023" textValue="2023">2023</SelectItem>
+            <SelectItem key="2024" textValue="2024">2024</SelectItem>
             <SelectItem key="2025" textValue="2025">2025</SelectItem>
             <SelectItem key="2026" textValue="2026">2026</SelectItem>
           </Select>

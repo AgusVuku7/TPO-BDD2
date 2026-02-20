@@ -121,7 +121,7 @@ const GradeConversion = () => {
               Versión: {resultado.metadata.version}
             </Chip>
             <Chip size="sm" variant="flat" color="secondary">
-              Sincronizado: {new Date(resultado.metadata.timestamp).toLocaleDateString()}
+              Sincronizado: {resultado.metadata.aplicada_el}
             </Chip>
           </div>
         )}

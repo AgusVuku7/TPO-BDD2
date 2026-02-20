@@ -9,18 +9,24 @@ const client = new cassandra.Client({
 async function inicializarCassandra() {
     const keyspace = 'edugrade_analitica';
     try {
-        console.log("🚀 Configurando tablas de analítica para EduGrade...");
+        console.log("🧹 Limpiando base de datos existente...");
+        
+        // 1. Eliminar Keyspace si existe (Limpieza total)
+        await client.execute(`DROP KEYSPACE IF EXISTS ${keyspace}`);
+        console.log(`✅ Keyspace "${keyspace}" eliminado (si existía).`);
+
+        console.log("🚀 Configurando nuevas tablas de analítica para EduGrade...");
 
         // Borramos el keyspace anterior para asegurarnos de que tome los cambios de UUID a TEXT
         await client.execute(`DROP KEYSPACE IF EXISTS edugrade_analitica`);
         
         await client.execute(`
-            CREATE KEYSPACE IF NOT EXISTS edugrade_analitica 
+            CREATE KEYSPACE IF NOT EXISTS ${keyspace} 
             WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
         `);
         
-        await client.execute("USE edugrade_analitica");
-        console.log("✅ Keyspace listo.");
+        await client.execute(`USE ${keyspace}`);
+        console.log("✅ Keyspace creado y seleccionado.");
 
         const queries = [
             // CAMBIO AQUÍ: institucion_id y materia_id ahora son TEXT
@@ -78,7 +84,7 @@ async function inicializarCassandra() {
             await client.execute(query);
         }
 
-        console.log("✅ Estructura de Cassandra completada con éxito.");
+        console.log("✨ Estructura de Cassandra completada con éxito desde cero.");
 
     } catch (error) {
         console.error("❌ Error en la inicialización:", error);

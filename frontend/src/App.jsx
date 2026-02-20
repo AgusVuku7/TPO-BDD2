@@ -7,6 +7,7 @@ import GradeConversion from './components/calificaciones/GradeConversion';
 import RuleManager from './components/calificaciones/RuleManager';
 import MateriaDetail from './components/materia/MateriaDetail'
 import AnaliticaDashboard from './components/analitica/AnaliticaDashboard';
+import ConversionMatrix from './components/calificaciones/ConversionMatrix';
 
 function App() {
   const [view, setView] = useState('students');
@@ -73,6 +74,7 @@ function App() {
           <div>
             <h2 className="text-xl font-semibold p-4">Faltan registros de trazabilidad y auditoria (Cassandra)</h2>
             <GradeConversion />
+            <ConversionMatrix />
             <RuleManager />
           </div>
         )}

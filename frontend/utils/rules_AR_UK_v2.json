@@ -1,0 +1,51 @@
+[
+  {
+    "origen": "AR",
+    "destino": "UK",
+    "version": "2.0",
+    "mapping": [
+      {
+        "min": 10.0,
+        "max": 10.0,
+        "result": "D*",
+        "label": "Diamond Distinction (Outstanding Performance)"
+      },
+      {
+        "min": 9.0,
+        "max": 9.99,
+        "result": "A+",
+        "label": "Advanced First Class"
+      },
+      {
+        "min": 8.0,
+        "max": 8.99,
+        "result": "M+",
+        "label": "High Merit (Research Track)"
+      },
+      {
+        "min": 7.0,
+        "max": 7.99,
+        "result": "M",
+        "label": "Merit (Standard)"
+      },
+      {
+        "min": 6.0,
+        "max": 6.99,
+        "result": "P+",
+        "label": "Strong Pass (Upper Modular)"
+      },
+      {
+        "min": 4.0,
+        "max": 5.99,
+        "result": "P",
+        "label": "Standard Pass"
+      },
+      {
+        "min": 0.0,
+        "max": 3.99,
+        "result": "U",
+        "label": "Unclassified (Requires Resit)"
+      }
+    ]
+  }
+]

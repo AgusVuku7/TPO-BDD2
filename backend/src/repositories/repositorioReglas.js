@@ -16,6 +16,12 @@ class RepositorioReglas {
     const data = await client.lIndex(key, 0); 
     return data ? JSON.parse(data) : null;
   }
+
+  async getAllRuleKeys() {
+    const client = getRedisClient();
+    // Escanea las llaves con el patrón definido
+    return await client.keys('regla:*:*:history');
+  }
 }
 
 module.exports = new RepositorioReglas();

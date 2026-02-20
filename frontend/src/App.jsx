@@ -13,10 +13,15 @@ function App() {
   const [view, setView] = useState('students');
   //Estado para saber si estamos viendo el detalle de una materia
   const [selectedMateriaId, setSelectedMateriaId] = useState(null);
+  const [refreshMatrix, setRefreshMatrix] = useState(0);
 
   // Función para volver a la lista
   const handleBackToList = () => {
     setSelectedMateriaId(null);
+  };
+
+  const handleRulesUploaded = () => {
+    setRefreshMatrix(prev => prev + 1);
   };
 
   return (
@@ -57,7 +62,7 @@ function App() {
         )}
 
         {view === 'subjects' && (
-          <div className="py-4">
+          <div>
             {!selectedMateriaId ? (
               <MateriaList onSelecMateria={(id) => setSelectedMateriaId(id)} />
             ) : (
@@ -72,10 +77,9 @@ function App() {
 
         {view === 'administracion' && (
           <div>
-            <h2 className="text-xl font-semibold p-4">Faltan registros de trazabilidad y auditoria (Cassandra)</h2>
             <GradeConversion />
-            <ConversionMatrix />
-            <RuleManager />
+            <ConversionMatrix refreshKey={refreshMatrix} />
+            <RuleManager onUploadSuccess={handleRulesUploaded} />
           </div>
         )}
       </main>

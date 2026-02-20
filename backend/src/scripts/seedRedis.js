@@ -20,19 +20,19 @@ const cargarCombustible = async () => {
         // Enfoque: Promedios anuales e instancias de recuperación.
         // ==========================================
         { origen: "UK", destino: "AR", version: "1.0", mapping: [
-            { min: "A*", max: "A*", result: "10", label: "Sobresaliente (Coursework Distinction)" },
-            { min: "B", max: "C", result: "7", label: "Bueno (Modular Pass)" },
-            { min: "E", max: "E", result: "4", label: "Aprobado (Threshold)" },
-            { min: "F", max: "U", result: "2", label: "Insuficiente (A Recuperatorio Feb)" }
+            { min: "A", max: "A*", result: "10", label: "Sobresaliente" },
+            { min: "B", max: "C", result: "7", label: "Bueno" },
+            { min: "E", max: "E", result: "4", label: "Aprobado" },
+            { min: "F", max: "U", result: "2", label: "Insuficiente" }
         ]},
         { origen: "US", destino: "AR", version: "1.0", mapping: [
-            { min: 3.8, max: 4.0, result: "10", label: "Sobresaliente (Unweighted GPA)" },
+            { min: 3.8, max: 4.0, result: "10", label: "Sobresaliente" },
             { min: 3.0, max: 3.79, result: "8", label: "Distinguido" },
             { min: 2.0, max: 2.99, result: "6", label: "Aprobado" },
-            { min: 0.0, max: 1.99, result: "2", label: "Insuficiente (A Recuperatorio Dic)" }
+            { min: 0.0, max: 1.99, result: "2", label: "Insuficiente" }
         ]},
         { origen: "DE", destino: "AR", version: "1.0", mapping: [
-            { min: 1.0, max: 1.5, result: "10", label: "Sobresaliente (Bundesweit)" },
+            { min: 1.0, max: 1.5, result: "10", label: "Sobresaliente" },
             { min: 1.6, max: 3.0, result: "8", label: "Distinguido" },
             { min: 3.1, max: 4.0, result: "6", label: "Aprobado" },
             { min: 4.1, max: 6.0, result: "2", label: "Reprobado" }
@@ -49,13 +49,13 @@ const cargarCombustible = async () => {
         // Enfoque: Créditos por materia y Letter Grades.
         // ==========================================
         { origen: "AR", destino: "US", version: "1.0", mapping: [
-            { min: 9.0, max: 10.0, result: "4.0", label: "Grade A (Weighted)" },
+            { min: 9.0, max: 10.0, result: "4.0", label: "Grade A" },
             { min: 7.0, max: 8.99, result: "3.0", label: "Grade B" },
             { min: 4.0, max: 6.99, result: "2.0", label: "Grade C" },
-            { min: 0.0, max: 3.99, result: "0.0", label: "Grade F (No Credits)" }
+            { min: 0.0, max: 3.99, result: "0.0", label: "Grade F" }
         ]},
         { origen: "UK", destino: "US", version: "1.0", mapping: [
-            { min: "A*", max: "A", result: "4.0", label: "Grade A (High Credits)" },
+            { min: "A*", max: "A", result: "4.0", label: "Grade A" },
             { min: "B", max: "C", result: "3.0", label: "Grade B" },
             { min: "D", max: "E", result: "2.0", label: "Grade C" },
             { min: "F", max: "U", result: "0.0", label: "Grade F" }
@@ -78,13 +78,13 @@ const cargarCombustible = async () => {
         // Enfoque: Evaluación modular y distinción Coursework vs Exams.
         // ==========================================
         { origen: "AR", destino: "UK", version: "1.0", mapping: [
-            { min: 9.0, max: 10.0, result: "A*", label: "Distinction (Final Exam)" },
-            { min: 7.0, max: 8.99, result: "B", label: "Merit (Coursework)" },
-            { min: 4.0, max: 6.99, result: "C", label: "Pass (Modular)" },
+            { min: 9.0, max: 10.0, result: "A*", label: "Distinction" },
+            { min: 7.0, max: 8.99, result: "B", label: "Merit" },
+            { min: 4.0, max: 6.99, result: "C", label: "Pass" },
             { min: 0.0, max: 3.99, result: "F", label: "Fail" }
         ]},
         { origen: "US", destino: "UK", version: "1.0", mapping: [
-            { min: 3.9, max: 4.0, result: "A*", label: "Excellent (A-Level Equiv)" },
+            { min: 3.9, max: 4.0, result: "A*", label: "Excellent" },
             { min: 3.0, max: 3.89, result: "B", label: "Good" },
             { min: 2.0, max: 2.99, result: "C", label: "Pass" },
             { min: 0.0, max: 1.99, result: "F", label: "Fail" }
@@ -107,10 +107,10 @@ const cargarCombustible = async () => {
         // Enfoque: Escala numérica inversa y evaluación continua.
         // ==========================================
         { origen: "AR", destino: "DE", version: "1.0", mapping: [
-            { min: 10.0, max: 10.0, result: "1.0", label: "Sehr Gut (Continuous Eval)" },
+            { min: 10.0, max: 10.0, result: "1.0", label: "Sehr Gut" },
             { min: 8.0, max: 9.9, result: "2.0", label: "Gut" },
-            { min: 4.0, max: 7.9, result: "4.0", label: "Ausreichend (Pass)" },
-            { min: 0.0, max: 3.9, result: "5.0", label: "Mangelhaft (Fail)" }
+            { min: 4.0, max: 7.9, result: "4.0", label: "Ausreichend" },
+            { min: 0.0, max: 3.9, result: "5.0", label: "Mangelhaft" }
         ]},
         { origen: "US", destino: "DE", version: "1.0", mapping: [
             { min: 3.9, max: 4.0, result: "1.0", label: "Sehr Gut" },

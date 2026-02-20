@@ -1,106 +1,142 @@
-import { useState } from 'react';
-import { Card, CardBody, CardHeader, Input, Button, Divider, Badge } from '@heroui/react';
-import { Plus, Trash, Save, Globe } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Card, CardBody, CardHeader, Button, Divider, Badge, Progress } from '@heroui/react';
+import { FileJson, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 
-const RuleManager = () => {
-  const [rule, setRule] = useState({
-    origen: '',
-    destino: '',
-    version: '1.0',
-    mapping: [{ min: '', max: '', result: '', label: '' }]
-  });
-  const [loading, setLoading] = useState(false);
+const RuleImporter = () => {
+  const [dragActive, setDragActive] = useState(false);
+  const [fileData, setFileData] = useState(null); // Array de reglas parseadas
+  const [status, setStatus] = useState({ loading: false, progress: 0, error: null, success: null });
+  const fileInputRef = useRef(null);
 
-  // Agregar una nueva fila al mapeo
-  const addMapping = () => {
-    setRule({
-      ...rule,
-      mapping: [...rule.mapping, { min: '', max: '', result: '', label: '' }]
-    });
+  // Manejadores de Drag & Drop
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    else if (e.type === "dragleave") setDragActive(false);
   };
 
-  // Eliminar una fila específica
-  const removeMapping = (index) => {
-    const newMapping = rule.mapping.filter((_, i) => i !== index);
-    setRule({ ...rule, mapping: newMapping });
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
   };
 
-  // Actualizar campos específicos del mapeo
-  const updateMapping = (index, field, value) => {
-    const newMapping = [...rule.mapping];
-    // Intentamos convertir a número si es posible para mantener la lógica del backend
-    const val = isNaN(value) || value === '' ? value : parseFloat(value);
-    newMapping[index][field] = val;
-    setRule({ ...rule, mapping: newMapping });
+  // Procesamiento del archivo JSON
+  const processFile = (file) => {
+    if (file.type !== "application/json") {
+      setStatus({ ...status, error: "El archivo debe ser un JSON válido." });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        // Validamos que sea un array de reglas
+        const rulesArray = Array.isArray(json) ? json : [json];
+        setFileData(rulesArray);
+        setStatus({ ...status, error: null, success: `Se encontraron ${rulesArray.length} reglas.` });
+      } catch {
+        setStatus({ ...status, error: "Error al parsear el JSON. Verifica el formato." });
+      }
+    };
+    reader.readAsText(file);
   };
 
-  const handleSave = async () => {
-    setLoading(true);
+  const handleUpload = async () => {
+    if (!fileData) return;
+    setStatus({ ...status, loading: true, progress: 0 });
+
+    let count = 0;
+    const total = fileData.length;
+
     try {
-      // Enviamos al endpoint POST que ya tienes en conversion.js
-      const res = await api.post('/conversion/regla', rule);
-      alert(`Éxito: ${res.data.mensaje}`);
-      // Limpiar formulario tras éxito
-      setRule({ origen: '', destino: '', version: '1.0', mapping: [{ min: '', max: '', result: '', label: '' }] });
+      for (const rule of fileData) {
+        // Reutilizamos tu lógica de guardado en Redis (Append-only)
+        await api.post('/conversion/regla', rule);
+        count++;
+        setStatus(prev => ({ ...prev, progress: Math.round((count / total) * 100) }));
+      }
+      setStatus({ loading: false, progress: 100, error: null, success: "¡Todas las reglas han sido publicadas en Redis!" });
+      setFileData(null);
     } catch (err) {
-      alert("Error: " + (err.response?.data?.error || "Error al guardar"));
-    } finally {
-      setLoading(false);
+      setStatus({ 
+        loading: false, 
+        progress: 0, 
+        error: `Error en regla ${count + 1}: ${err.response?.data?.error || err.message}` 
+      });
     }
   };
 
   return (
-    <Card className="p-6 mt-8 border-t-4 border-t-green-500">
+    <Card className="p-6 mt-8">
       <CardHeader className="flex justify-between items-center">
         <div className="flex gap-3 items-center">
-          <Globe className="text-green-600" size={30} />
+          <FileJson className="text-blue-600" size={30} />
           <div>
-            <p className="text-xl font-bold text-slate-800">Editor de Reglas</p>
-            <p className="text-small text-default-500">Define nuevas lógicas de conversión Append-only</p>
+            <p className="text-xl font-bold text-slate-800">Importar</p>
+            <p className="text-small text-default-500">Publicación de Nuevas Reglas</p>
           </div>
         </div>
-        <Badge color="success" variant="flat">Admin Mode</Badge>
       </CardHeader>
       
       <Divider className="my-4" />
 
-      <CardBody className="gap-6">
-        {/* Cabecera de la Regla */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="País Origen (ISO)" placeholder="Ej: AR" value={rule.origen} 
-            onChange={(e) => setRule({...rule, origen: e.target.value.toUpperCase()})} />
-          <Input label="País Destino (ISO)" placeholder="Ej: US" value={rule.destino} 
-            onChange={(e) => setRule({...rule, destino: e.target.value.toUpperCase()})} />
-          <Input label="Versión" placeholder="1.0" value={rule.version} 
-            onChange={(e) => setRule({...rule, version: e.target.value})} />
-        </div>
-
-        <div className="mt-4">
-          <p className="font-semibold mb-3 flex items-center gap-2">
-            Configuración de Mapeos
-            <Button size="sm" variant="flat" color="primary" isIconOnly onPress={addMapping}><Plus size={16}/></Button>
-          </p>
+      <CardBody className="gap-4">
+        {/* Zona de Drop */}
+        <div 
+          className={`relative p-10 border-2 border-dashed rounded-xl transition-all flex flex-col items-center justify-center gap-4
+            ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50"}
+            ${fileData ? "border-blue-400 bg-blue-50" : ""}`}
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current.click()}
+        >
+          <input ref={fileInputRef} type="file" className="hidden" accept=".json" onChange={(e) => processFile(e.target.files[0])} />
           
-          {rule.mapping.map((m, index) => (
-            <div key={index} className="flex flex-wrap md:flex-nowrap gap-2 mb-3 items-center animate-appearance-in">
-              <Input size="sm" placeholder="Min" className="w-20" value={m.min} onChange={(e) => updateMapping(index, 'min', e.target.value)} />
-              <Input size="sm" placeholder="Max" className="w-20" value={m.max} onChange={(e) => updateMapping(index, 'max', e.target.value)} />
-              <Input size="sm" placeholder="Resultado" className="w-24" value={m.result} onChange={(e) => updateMapping(index, 'result', e.target.value)} />
-              <Input size="sm" placeholder="Etiqueta (Ej: Sobresaliente)" className="flex-1" value={m.label} onChange={(e) => updateMapping(index, 'label', e.target.value)} />
-              <Button size="sm" isIconOnly color="danger" variant="light" onPress={() => removeMapping(index)}>
-                <Trash size={16} />
-              </Button>
-            </div>
-          ))}
+          <UploadCloud size={48} className={fileData ? "text-blue-500" : "text-gray-400"} />
+          <div className="text-center">
+            <p className="font-semibold text-gray-700">
+              {fileData ? "Archivo cargado con éxito" : "Arrastra tu JSON aquí o haz clic para buscar"}
+            </p>
+            <p className="text-xs text-gray-500">Solo archivos .json</p>
+          </div>
         </div>
 
-        <Button color="success" className="text-white font-bold w-full" onPress={handleSave} isLoading={loading} startContent={<Save size={20} />}>
-          Publicar Regla en Redis (Append-only)
+        {/* Feedback de Estado */}
+        {status.error && (
+          <div className="flex items-center gap-2 text-danger text-sm bg-danger-50 p-3 rounded-lg">
+            <AlertCircle size={16} /> {status.error}
+          </div>
+        )}
+
+        {status.loading && (
+          <div className="space-y-2">
+            <p className="text-xs font-mono text-center">Procesando: {status.progress}%</p>
+            <Progress value={status.progress} color="primary" className="h-2" />
+          </div>
+        )}
+
+        <Button 
+          color={fileData ? "primary" : "default"} 
+          className="font-bold py-6"
+          isDisabled={!fileData || status.loading}
+          isLoading={status.loading}
+          onPress={handleUpload}
+          fullWidth
+        >
+          Iniciar Carga en Base de Datos
         </Button>
       </CardBody>
     </Card>
   );
 };
 
-export default RuleManager;
+export default RuleImporter;

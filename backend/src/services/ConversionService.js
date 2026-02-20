@@ -1,5 +1,6 @@
 const repositorioReglas = require('../repositories/repositorioReglas');
 const Regla = require('../models/Regla');
+const { getRedisClient } = require('../utils/DatabaseManager');
 
 class ConversionService {
   constructor() {
@@ -95,6 +96,18 @@ class ConversionService {
       }
     };
   }
+
+  async obtenerTodas() {
+  // 1. Pedimos las llaves al repo
+  const keys = await repositorioReglas.getAllRuleKeys();
+  
+  // 2. Mapeamos cada llave a su regla más reciente
+  const promesas = keys.map(key => repositorioReglas.getLatestRule(key));
+  const resultados = await Promise.all(promesas);
+
+  // Filtramos nulos por si alguna lista quedó vacía
+  return resultados.filter(r => r !== null);
+}
 }
 
 module.exports = new ConversionService();

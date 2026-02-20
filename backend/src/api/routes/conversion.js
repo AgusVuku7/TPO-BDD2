@@ -31,4 +31,14 @@ router.get('/convertir', async (req, res) => {
   }
 });
 
+// RUTA PARA OBTENER TODAS LAS REGLAS (Para el Accordion del Front)
+router.get('/', async (req, res) => {
+  try {
+    const reglas = await ConversionService.obtenerTodas();
+    res.json(reglas);
+  } catch (error) {
+    res.status(500).json({ error: "Error al recuperar la matriz de conversión" });
+  }
+});
+
 module.exports = router;

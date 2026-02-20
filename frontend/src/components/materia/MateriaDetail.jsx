@@ -102,23 +102,45 @@ const MateriaDetail = ({ materia, onBack }) => {
   return (
     <div className="space-y-6">
       {/* SECCIÓN 1: DATOS GENERALES */}
-      <div className="grid grid-cols-2 gap-6 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="grid grid-cols-2 gap-6 p-4">
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código</span>
-          <span className="text-md font-mono text-slate-600">{materia._id}</span>
+          <span className="text-xs font-bold text-gray-500 uppercase">Nombre</span>
+          <span className="text-lg text-gray-800">{materia.nombre}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nombre</span>
-          <span className="text-md font-bold text-slate-800">{materia.nombre}</span>
+          <span className="text-xs font-bold text-gray-500 uppercase">Nivel</span>
+          <span className="text-lg text-gray-800">{materia.nivel}</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nivel</span>
-          <span className="text-md text-slate-700">{materia.nivel}</span>
+          <span className="text-xs font-bold text-gray-500 uppercase">Institución</span>
+          <span className="text-lg text-gray-800">{materia.institucion?.nombre || 'ID No asignado'}</span>
         </div>
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Institución</span>
-          <span className="text-md text-slate-700 font-medium">{materia.institucion?.nombre || 'ID No asignado'}</span>
-        </div>
+      </div>
+
+      <Divider className="my-4" />
+
+      {/* Sección Dinámica: Metadata */}
+      <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
+        <h4 className="text-sm font-bold text-slate-600 mb-3 uppercase">
+          Información Adicional
+        </h4>
+        
+        {materia.metadata && Object.keys(materia.metadata).length > 0 ? (
+          <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+            {Object.entries(materia.metadata).map(([clave, valor]) => (
+              <div key={clave} className="flex flex-col border-b border-gray-200 pb-1">
+                <span className="text-xs font-semibold text-gray-400 uppercase">
+                  {clave.replace(/_/g, ' ')}
+                </span>
+                <span className="text-sm text-gray-700">
+                  {typeof valor === 'object' ? JSON.stringify(valor) : String(valor)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 italic">No hay datos adicionales registrados.</p>
+        )}
       </div>
 
       <Divider className="my-2" />
@@ -133,7 +155,7 @@ const MateriaDetail = ({ materia, onBack }) => {
             <Chip size="sm" color="primary" variant="flat">{correlativas.length}</Chip>
           </h3>
           
-          <div className="min-h-[120px] p-4 bg-orange-50/30 border border-orange-100 rounded-xl space-y-2">
+          <div className="min-h-30 p-4 bg-orange-50/30 border border-orange-100 rounded-xl space-y-2">
             {correlativas.length === 0 ? (
               <p className="text-xs text-slate-400 italic text-center py-8">Esta materia no tiene requisitos previos registrados.</p>
             ) : (
@@ -184,7 +206,7 @@ const MateriaDetail = ({ materia, onBack }) => {
             🌐 Consultar Equivalencias (Grafo)
           </h3>
           
-          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-4 min-h-[200px]">
+          <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm space-y-4 min-h-50">
             <p className="text-xs text-slate-500">
               Consultar a qué materia equivale <strong>{materia.nombre}</strong> en otro sistema educativo.
             </p>
@@ -217,7 +239,7 @@ const MateriaDetail = ({ materia, onBack }) => {
               </Button>
             </div>
 
-            <div className="mt-2 space-y-2 max-h-[300px] overflow-y-auto">
+            <div className="mt-2 space-y-2 max-h-75 overflow-y-auto">
               {equivalencias.length > 0 ? (
                 equivalencias.map((eq, index) => (
                   <div key={index} className="p-3 bg-green-50 border border-green-200 rounded-lg animate-appearance-in">
@@ -234,10 +256,10 @@ const MateriaDetail = ({ materia, onBack }) => {
                     
                     <div className="flex flex-wrap gap-2 mt-2">
                       <Chip size="sm" variant="flat" color="success">
-                         {eq.distancia === 1 ? "Directa" : "Indirecta (Transitiva)"}
+                        {eq.distancia === 1 ? "Directa" : "Indirecta (Transitiva)"}
                       </Chip>
                       <Chip size="sm" variant="flat" color="default">
-                         {eq.distancia} salto(s)
+                        {eq.distancia} salto(s)
                       </Chip>
                     </div>
                   </div>

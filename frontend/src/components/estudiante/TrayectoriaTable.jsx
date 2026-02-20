@@ -4,9 +4,12 @@ import {
   Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Card, CardHeader, Divider, Button, Spinner,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter,
-  Input, Select, SelectItem, useDisclosure
+  Input, Select, SelectItem, useDisclosure,
+  NumberInput,
+  DateInput
 } from "@heroui/react";
 import { School, BookOpen, Trash2, Plus, Calendar, Star, Pencil } from "lucide-react";
+import { parseDate } from "@internationalized/date";
 
 const TrayectoriaTable = ({ studentId }) => {
   const [materias, setMaterias] = useState([]);
@@ -22,7 +25,7 @@ const TrayectoriaTable = ({ studentId }) => {
   const { isOpen: isInstOpen, onOpen: onInstOpen, onClose: onInstClose } = useDisclosure();
 
   // Estados de Formulario
-  const [formMateria, setFormMateria] = useState({ materiaId: "", nota: "", anio: "" });
+  const [formMateria, setFormMateria] = useState({ materiaId: "", nota: null, anio: new Date().getFullYear() });
   const [formInst, setFormInst] = useState({ institucionId: "", desde: "", hasta: "" });
 
   // 1. Cargar datos del alumno (Neo4j)
@@ -64,14 +67,14 @@ const TrayectoriaTable = ({ studentId }) => {
 
   const openMateriaModal = () => { 
     setEditingId(null); 
-    setFormMateria({ materiaId: "", nota: "", anio: "" }); 
+    setFormMateria({ materiaId: "", nota: null, anio: new Date().getFullYear() }); 
     loadCatalogs(); 
     onMatOpen(); 
   };
   
   const openInstModal = () => { 
     setEditingId(null); 
-    setFormInst({ institucionId: "", desde: "", hasta: "" }); 
+    setFormInst({ institucionId: "", desde: null, hasta: null }); 
     loadCatalogs(); 
     onInstOpen(); 
   };
@@ -109,30 +112,28 @@ const TrayectoriaTable = ({ studentId }) => {
 
   // Handlers de Eliminación
   const handleDeleteMateria = async (id) => {
-    if (confirm("¿Eliminar materia?")) {
-      await api.delete(`/trayectoria/${studentId}/materia/${id}`);
-      fetchTrayectoria();
-    }
+    await api.delete(`/trayectoria/${studentId}/materia/${id}`);
+    fetchTrayectoria();
   };
 
   const handleDeleteInstitucion = async (id) => {
-    if (confirm("¿Eliminar institución?")) {
-      await api.delete(`/trayectoria/${studentId}/institucion/${id}`);
-      fetchTrayectoria();
-    }
+    await api.delete(`/trayectoria/${studentId}/institucion/${id}`);
+    fetchTrayectoria();
   };
 
   // Handlers de actualización
   const handleEditMateria = (m) => {
     setEditingId(m.id);
-    setFormMateria({ materiaId: m.id, nota: m.nota, anio: m.anio });
+    setFormMateria({ materiaId: m.id, nota: Number(m.nota), anio: Number(m.anio) });
     loadCatalogs();
     onMatOpen();
   };
 
   const handleEditInst = (i) => {
     setEditingId(i.id);
-    setFormInst({ institucionId: i.id, desde: i.desde, hasta: i.hasta });
+    const fechaDesde = i.desde?.split('T')[0];
+    const fechaHasta = i.hasta?.split('T')[0];
+    setFormInst({ institucionId: i.id, desde: fechaDesde, hasta: fechaHasta });
     loadCatalogs();
     onInstOpen();
   };
@@ -147,7 +148,7 @@ const TrayectoriaTable = ({ studentId }) => {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
       
       {/* TARJETA MATERIAS */}
-      <Card className="p-4 shadow-sm">
+      <Card className="p-4">
         <CardHeader className="flex justify-between">
           <div className="flex gap-2 items-center"><BookOpen className="text-blue-600" /><p className="font-bold">Materias</p></div>
           <Button size="sm" color="primary" variant="flat" onPress={openMateriaModal} startContent={<Plus size={16}/>}>Añadir</Button>
@@ -158,16 +159,16 @@ const TrayectoriaTable = ({ studentId }) => {
             <TableColumn>MATERIA</TableColumn>
             <TableColumn>NOTA</TableColumn>
             <TableColumn>AÑO</TableColumn>
-            <TableColumn>ACCIONES</TableColumn>
+            <TableColumn className="text-center">ACCIONES</TableColumn>
           </TableHeader>
           <TableBody emptyContent={loading ? <Spinner /> : "Sin materias"}>
             {materias.map((m) => (
               <TableRow key={m.id}>
                 <TableCell>{m.nombre}</TableCell>
-                <TableCell className="font-bold text-blue-600">{m.nota}</TableCell>
+                <TableCell>{m.nota}</TableCell>
                 <TableCell>{m.anio}</TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
+                  <div className="flex justify-center gap-2">
                     <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleEditMateria(m)}>
                       <Pencil size={16} />
                     </Button>
@@ -183,18 +184,18 @@ const TrayectoriaTable = ({ studentId }) => {
       </Card>
 
       {/* TARJETA INSTITUCIONES */}
-      <Card className="p-4 shadow-sm">
+      <Card className="p-4">
         <CardHeader className="flex justify-between">
-          <div className="flex gap-2 items-center"><School className="text-emerald-600" /><p className="font-bold">Instituciones</p></div>
-          <Button size="sm" color="success" variant="flat" onPress={openInstModal} startContent={<Plus size={16}/>}>Vincular</Button>
+          <div className="flex gap-2 items-center"><School className="text-blue-600" /><p className="font-bold">Instituciones</p></div>
+          <Button size="sm" color="primary" variant="flat" onPress={openInstModal} startContent={<Plus size={16}/>}>Vincular</Button>
         </CardHeader>
         <Divider className="my-2" />
         <Table removeWrapper aria-label="Instituciones">
           <TableHeader>
             <TableColumn>NOMBRE</TableColumn>
             <TableColumn>DESDE</TableColumn>
-            <TableColumn>HASTA</TableColumn> {/* <-- FALTABA ESTA COLUMNA */}
-            <TableColumn className="text-center">ACCIONES</TableColumn> {/* <-- FALTABA ESTA COLUMNA */}
+            <TableColumn>HASTA</TableColumn>
+            <TableColumn className="text-center">ACCIONES</TableColumn>
           </TableHeader>
           <TableBody emptyContent={loading ? <Spinner /> : "Sin instituciones"}>
             {instituciones.map((i) => (
@@ -203,7 +204,7 @@ const TrayectoriaTable = ({ studentId }) => {
                 <TableCell>{i.desde}</TableCell>
                 <TableCell>{i.hasta || "Actualidad"}</TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
+                  <div className="flex justify-center gap-2">
                     <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleEditInst(i)}>
                       <Pencil size={16} />
                     </Button>
@@ -221,8 +222,8 @@ const TrayectoriaTable = ({ studentId }) => {
       {/* MODAL AÑADIR MATERIA */}
       <Modal isOpen={isMatOpen} onClose={onMatClose} placement="center">
         <ModalContent>
-          <ModalHeader className="flex gap-2">
-            <BookOpen /> {editingId ? "Actualizar Materia" : "Registrar Materia Aprobada"}
+          <ModalHeader className="flex gap-2 mt-3">
+            {editingId ? "Actualizar Materia" : "Registrar Materia cursada"}
           </ModalHeader>
           <ModalBody className="gap-4">
             <Select 
@@ -231,21 +232,44 @@ const TrayectoriaTable = ({ studentId }) => {
               placeholder="Buscar..."
               selectedKeys={[formMateria.materiaId]}
               onSelectionChange={(keys) => setFormMateria({...formMateria, materiaId: Array.from(keys)[0]})}
+              isRequired
             >
               {allMaterias.map((m) => (
                 <SelectItem key={m._id} textValue={m.nombre}>{m.nombre}</SelectItem>
               ))}
             </Select>
             <div className="flex gap-4">
-              <Input label="Nota" type="number" startContent={<Star size={16}/>}
-                value={formMateria.nota} onChange={(e) => setFormMateria({...formMateria, nota: e.target.value})} />
-              <Input label="Año" type="number" startContent={<Calendar size={16}/>}
-                value={formMateria.anio} onChange={(e) => setFormMateria({...formMateria, anio: e.target.value})} />
+              <NumberInput 
+                label="Nota" 
+                startContent={<Star size={16}/> } 
+                isRequired
+                minValue={0}
+                maxValue={10}
+                formatOptions={{
+                    minimumFractionDigits: 1, // Fuerza al menos un decimal (ej: 7,0)
+                    maximumFractionDigits: 2  // Permite hasta dos decimales (ej: 7,55)
+                  }}
+                onValueChange={(val) => setFormMateria({...formMateria, nota: val})}
+                value={formMateria.nota} 
+              />
+              <NumberInput 
+                label="Año"
+                startContent={<Calendar size={16}/>}
+                isRequired
+                minValue={1900}
+                maxValue={2100}
+                formatOptions={{
+                  useGrouping: false,      // Evita el punto/coma de miles (2026 en vez de 2,026)
+                  maximumFractionDigits: 0  // Asegura que sea un número entero
+                }}
+                onValueChange={(val) => setFormMateria({...formMateria, anio: val})}
+                value={formMateria.anio}
+              />
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onMatClose}>Cancelar</Button>
-            <Button color="primary" isLoading={submitting} onPress={handleMateriaSubmit}>Guardar en Grafo</Button>
+            <Button color="primary" isLoading={submitting} onPress={handleMateriaSubmit}>Guardar</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -253,11 +277,11 @@ const TrayectoriaTable = ({ studentId }) => {
       {/* MODAL VINCULAR INSTITUCIÓN */}
       <Modal isOpen={isInstOpen} onClose={onInstClose} placement="center">
         <ModalContent>
-          <ModalHeader className="flex gap-2">
-            <School /> {editingId ? "Actualizar Institución" : "Vincular Institución"}
+          <ModalHeader className="flex gap-2 mt-3">
+            {editingId ? "Actualizar Institución" : "Vincular Institución"}
           </ModalHeader>
           <ModalBody className="gap-4">
-            <Select label="Institución" isDisabled={!!editingId} placeholder="Seleccione una..."
+            <Select label="Institución" isDisabled={!!editingId} placeholder="Seleccione una..." isRequired
               selectedKeys={[formInst.institucionId]}
               onSelectionChange={(keys) => setFormInst({...formInst, institucionId: Array.from(keys)[0]})}
             >
@@ -266,15 +290,23 @@ const TrayectoriaTable = ({ studentId }) => {
               ))}
             </Select>
             <div className="flex gap-4">
-              <Input label="Desde" type="date" placeholder=" "
-                value={formInst.desde} onChange={(e) => setFormInst({...formInst, desde: e.target.value})} />
-              <Input label="Hasta" type="date" placeholder=" "
-                value={formInst.hasta} onChange={(e) => setFormInst({...formInst, hasta: e.target.value})} />
+              <DateInput 
+                label="Desde"
+                isRequired
+                value={formInst.desde ? parseDate(formInst.desde) : null}
+                onChange={(date) => setFormInst({...formInst, desde: date?.toString()})}
+              />
+              <DateInput
+                label="Hasta"
+                isRequired
+                value={formInst.hasta ? parseDate(formInst.hasta) : null}
+                onChange={(date) => setFormInst({...formInst, hasta: date?.toString()})}
+              />
             </div>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={onInstClose}>Cancelar</Button>
-            <Button color="success" className="text-white" isLoading={submitting} onPress={handleInstSubmit}>Crear Vínculo</Button>
+            <Button color="primary" className="text-white" isLoading={submitting} onPress={handleInstSubmit}>Guardar</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

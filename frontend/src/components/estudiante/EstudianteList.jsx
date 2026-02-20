@@ -58,10 +58,8 @@ const EstudianteList = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Eliminar estudiante?')) {
-      await api.delete(`/estudiante/${id}`);
-      load();
-    }
+    await api.delete(`/estudiante/${id}`);
+    load();
   };
 
   return (
@@ -106,7 +104,7 @@ const EstudianteList = () => {
         <CardBody>
           <Table 
             aria-label="Tabla de Estudiantes" 
-            color="primary"
+            color="default"
             removeWrapper
             selectionMode="single" // Habilitar selección única
             selectedKeys={selectedKeys}

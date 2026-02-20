@@ -18,4 +18,12 @@ router.get('/desvios/:contexto/:anio', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+router.get('/auditoria/eventos', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const data = await AnaliticaService.getAuditoria(limit);
+        res.json(data);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 module.exports = router;

@@ -134,6 +134,28 @@ class RepositorioCassandraAnalitica {
             throw error;
         }
     }
+
+    // --- FUNCIÓN PARA EL PANEL DE AUDITORÍA --- \\
+    async obtenerEventosAuditoria(limite = 50) {
+        const client = getCassandraClient();
+        const fechaActual = new Date();
+        const anioMes = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Buscamos en todas nuestras entidades base para este mes
+        const tipos = ['ESTUDIANTE', 'MATERIA', 'INSTITUCION', 'RELACION'];
+        let todosLosEventos = [];
+        
+        for (const tipo of tipos) {
+            const query = `SELECT * FROM registro_auditoria WHERE tipo_entidad = ? AND anio_mes = ? LIMIT ?`;
+            const result = await client.execute(query, [tipo, anioMes, limite], { prepare: true });
+            todosLosEventos = todosLosEventos.concat(result.rows);
+        }
+        
+        // Los ordenamos desde el más reciente al más antiguo
+        todosLosEventos.sort((a, b) => b.fecha_hora - a.fecha_hora);
+        
+        return todosLosEventos.slice(0, limite);
+    }
 }
 
 module.exports = new RepositorioCassandraAnalitica();

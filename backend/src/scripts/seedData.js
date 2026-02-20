@@ -179,7 +179,7 @@ async function seedDatabase() {
                 await TrayectoriaService.registrarTrayectoriaMateria(est._id, {
                     materiaId: mat._id,
                     nota: 4 + Math.floor(Math.random() * 7), // Notas de 4 a 10 para variar aprobaciones
-                    anio: 2022 + Math.floor(Math.random() * 3) // Año random: 2022, 2023 o 2024
+                    anio: 2022 + Math.floor(Math.random() * 5) // Año random: 2022 - 2026
                 });
             }
         }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Button, Select, SelectItem, Input } from '@heroui/react';
+import { Button, Select, SelectItem, Input, addToast } from '@heroui/react';
 import api from '../../services/api';
-import { ChevronsDown, LibraryBig } from 'lucide-react';
+import { ArrowLeftRight, ChevronsDown, LibraryBig } from 'lucide-react';
 
 const EquivalenciaForm = ({ onSuccess }) => {
     const [instituciones, setInstituciones] = useState([]);
@@ -53,13 +53,18 @@ const EquivalenciaForm = ({ onSuccess }) => {
         if (!matOrigen || !matDestino) return;
         setLoading(true);
         try {
-            await api.post('/api/materia/equivalencia', { 
+            await api.post('/materia/equivalencia', { 
                 idOrigen: matOrigen, 
                 idDestino: matDestino,
                 porcentaje: Number(porcentaje) 
             });
             
-            alert(`✅ Equivalencia vinculada exitosamente`);
+            addToast({
+                title: "Vínculo Exitoso",
+                description: "La equivalencia se ha registrado correctamente.",
+                color: "primary",
+                variant: "flat"
+            });
             
             // Resetear estados
             setInstOrigen(""); setMatOrigen(""); setMateriasOrigen([]);
@@ -68,7 +73,11 @@ const EquivalenciaForm = ({ onSuccess }) => {
             
             if (onSuccess) onSuccess();
         } catch (error) {
-            alert("❌ Error: " + (error.response?.data?.error || error.message));
+            addToast({
+                title: "Error de Vinculación",
+                description: error.response?.data?.error || error.message,
+                color: "danger"
+            });
         } finally {
             setLoading(false);
         }
@@ -77,7 +86,7 @@ const EquivalenciaForm = ({ onSuccess }) => {
     return (
         <div className="mb-6 gap-4 mt-2">
             <div className="flex gap-3 items-center">
-                <LibraryBig className="text-blue-600" size={30} />
+                <ArrowLeftRight className="text-blue-600" size={30} />
                 <div className="flex flex-col">
                     <p className="text-xl font-bold text-slate-800">Gestión de Equivalencias</p>
                     <p className="text-small text-default-500">Administración de materias equivalentes entre instituciones</p>
@@ -182,7 +191,7 @@ const EquivalenciaForm = ({ onSuccess }) => {
                     onPress={handleSubmit} 
                     isLoading={loading} 
                     isDisabled={!matOrigen || !matDestino}
-                    className="w-full max-w-4xl"
+                    className="w-full"
                 >
                     Vincular Equivalencia
                 </Button>

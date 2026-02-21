@@ -60,9 +60,10 @@ DATA SEEDING:
 docker-compose up --build // levanta los contenedores (las bases de datos tienen que estar listas)
 
 // 2. CORRER EL SCRIPT (Abrir una terminal nueva en la raíz del proyecto)
-docker-compose exec backend node src/scripts/seedData.js // formatea la base y genera los datos de prueba
-docker-compose exec backend node src/scripts/seedRedis.js
 docker-compose exec backend node src/scripts/setupCassandra.js
+docker-compose exec backend node src/scripts/seedData.js
+docker-compose exec backend node src/scripts/seedRedis.js
 
-// 3. ACTUALIZAR FRONTEND
-// ir al navegador y apretar F5 para ver los cambios reflejados
+//---------------
+
+Para cargar nueva version de regla, usar el JSON del front en utils

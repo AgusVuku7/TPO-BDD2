@@ -5,10 +5,19 @@ const OnboardingService = require('../../services/OnboardingService');
 // GET /api/materia (Listado y Búsqueda)
 router.get('/', async (req, res) => {
   try {
-    const { buscar } = req.query;
+    const { buscar, institucionId } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+
+    // Si se pide por institución, omitimos paginación general
+    if (institucionId) {
+      const materias = await OnboardingService.obtenerMateriasPorInstitucion(institucionId);
+      return res.json({
+        materias,
+        total: materias.length
+      });
+    }
 
     let resultado;
     if (buscar) {

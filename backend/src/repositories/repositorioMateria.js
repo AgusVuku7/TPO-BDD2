@@ -17,6 +17,10 @@ class SubjectRepository {
     return await Subject.findById(id);
   }
 
+  async findByInstitution(instId) {
+    return await Subject.find({ institucion: instId }).populate('institucion');
+  }
+
   async findByName(query, limit = 20, skip = 0) {
     const filter = { nombre: { $regex: query, $options: 'i' } };
     const [data, total] = await Promise.all([

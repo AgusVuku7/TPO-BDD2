@@ -5,6 +5,7 @@ import MateriaDetail from './MateriaDetail';
 import EquivalenciaForm from './EquivalenciaForm';
 import { Button, Card, CardBody, CardHeader, Divider, Input, Modal, ModalBody, ModalContent, ModalHeader, Pagination, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@heroui/react';
 import { Eye, Pencil, Plus, SearchIcon, Trash2, LibraryBig } from 'lucide-react';
+import CorrelativaForm from './CorrelativaForm';
 
 const MateriaList = () => {
   const [materias, setMaterias] = useState([]);
@@ -171,6 +172,9 @@ const MateriaList = () => {
 
       <Card className="p-6 mt-8">
         <EquivalenciaForm onSuccess={() => load()} />
+      </Card>
+      <Card className="p-6 mt-8">
+        <CorrelativaForm onSuccess={() => load()} />
       </Card>
     </div>
   );

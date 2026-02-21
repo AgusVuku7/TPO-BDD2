@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Button, Select, SelectItem, Input } from '@heroui/react';
+import { Button, Select, SelectItem, Input, addToast } from '@heroui/react';
 import api from '../../services/api';
-import { ChevronsDown, LibraryBig } from 'lucide-react';
+import { ArrowLeftRight, ChevronsDown, LibraryBig } from 'lucide-react';
 
 const EquivalenciaForm = ({ onSuccess }) => {
     const [instituciones, setInstituciones] = useState([]);
-    const [materias, setMaterias] = useState([]);
+    
+    // Separamos las materias en dos estados para Origen y Destino
+    const [materiasOrigen, setMateriasOrigen] = useState([]);
+    const [materiasDestino, setMateriasDestino] = useState([]);
 
-    // Usamos strings simples para el estado, igual que en tu InstitucionForm
     const [instOrigen, setInstOrigen] = useState("");
     const [matOrigen, setMatOrigen] = useState("");
     
@@ -18,52 +20,64 @@ const EquivalenciaForm = ({ onSuccess }) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchInstituciones = async () => {
             try {
-                const [resInst, resMat] = await Promise.all([
-                    api.get('/institucion'),
-                    api.get('/materia')
-                ]);
-                // Normalizamos los datos de la API
-                setInstituciones(resInst.data.instituciones || resInst.data || []);
-                setMaterias(resMat.data.materias || resMat.data || []);
+                const res = await api.get('/institucion');
+                setInstituciones(res.data.instituciones || res.data || []);
             } catch (error) {
-                console.error("Error cargando datos:", error);
+                console.error("Error cargando instituciones:", error);
             }
         };
-        fetchData();
+        fetchInstituciones();
     }, []);
 
-    // Filtrado de materias basado en el ID de la institución seleccionada
-    const materiasOrigen = materias.filter(m => {
-        const instId = m.institucion?._id || m.institucion;
-        return instId?.toString() === instOrigen;
-    });
-
-    const materiasDestino = materias.filter(m => {
-        const instId = m.institucion?._id || m.institucion;
-        return instId?.toString() === instDestino && m._id?.toString() !== matOrigen;
-    });
+    // Función para buscar materias por institución usando el nuevo parámetro del backend
+    const cargarMaterias = async (idInstitucion, tipo) => {
+        if (!idInstitucion) return;
+        try {
+            // Usamos el institucionId que implementamos en el backend
+            const res = await api.get(`/materia?institucionId=${idInstitucion}`);
+            const data = res.data.materias || [];
+            
+            if (tipo === 'origen') {
+                setMateriasOrigen(data);
+            } else {
+                setMateriasDestino(data);
+            }
+        } catch (error) {
+            console.error("Error cargando materias:", error);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!matOrigen || !matDestino) return;
         setLoading(true);
         try {
-            await api.post('/api/materia/equivalencia', { 
+            await api.post('/materia/equivalencia', { 
                 idOrigen: matOrigen, 
                 idDestino: matDestino,
                 porcentaje: Number(porcentaje) 
             });
             
-            alert(`✅ Equivalencia vinculada exitosamente`);
+            addToast({
+                title: "Vínculo Exitoso",
+                description: "La equivalencia se ha registrado correctamente.",
+                color: "primary",
+                variant: "flat"
+            });
             
-            setInstOrigen(""); setMatOrigen("");
-            setInstDestino(""); setMatDestino("");
+            // Resetear estados
+            setInstOrigen(""); setMatOrigen(""); setMateriasOrigen([]);
+            setInstDestino(""); setMatDestino(""); setMateriasDestino([]);
             setPorcentaje(100);
             
             if (onSuccess) onSuccess();
         } catch (error) {
-            alert("❌ Error: " + (error.response?.data?.error || error.message));
+            addToast({
+                title: "Error de Vinculación",
+                description: error.response?.data?.error || error.message,
+                color: "danger"
+            });
         } finally {
             setLoading(false);
         }
@@ -72,7 +86,7 @@ const EquivalenciaForm = ({ onSuccess }) => {
     return (
         <div className="mb-6 gap-4 mt-2">
             <div className="flex gap-3 items-center">
-                <LibraryBig className="text-blue-600" size={30} />
+                <ArrowLeftRight className="text-blue-600" size={30} />
                 <div className="flex flex-col">
                     <p className="text-xl font-bold text-slate-800">Gestión de Equivalencias</p>
                     <p className="text-small text-default-500">Administración de materias equivalentes entre instituciones</p>
@@ -87,8 +101,10 @@ const EquivalenciaForm = ({ onSuccess }) => {
                     // Usamos el patrón de tu ejemplo funcional
                     selectedKeys={instOrigen ? [instOrigen] : []}
                     onChange={(e) => {
-                        setInstOrigen(e.target.value);
-                        setMatOrigen(""); // Limpiar materia si cambia institución
+                        const val = e.target.value;
+                        setInstOrigen(val);
+                        setMatOrigen(""); 
+                        cargarMaterias(val, 'origen'); // Buscamos materias al seleccionar
                     }}
                     className="max-w-md"
                     isRequired
@@ -137,8 +153,10 @@ const EquivalenciaForm = ({ onSuccess }) => {
                     placeholder="Seleccionar..." 
                     selectedKeys={instDestino ? [instDestino] : []}
                     onChange={(e) => {
-                        setInstDestino(e.target.value);
+                        const val = e.target.value;
+                        setInstDestino(val);
                         setMatDestino("");
+                        cargarMaterias(val, 'destino'); // Buscamos materias al seleccionar
                     }}
                     className="max-w-md"
                     isRequired
@@ -173,7 +191,7 @@ const EquivalenciaForm = ({ onSuccess }) => {
                     onPress={handleSubmit} 
                     isLoading={loading} 
                     isDisabled={!matOrigen || !matDestino}
-                    className="w-full max-w-4xl"
+                    className="w-full"
                 >
                     Vincular Equivalencia
                 </Button>

@@ -226,6 +226,7 @@ class OnboardingService {
 
   async buscarMateriaPorNombre(nombre, limit, skip) { return await SubjectRepository.findByName(nombre, limit, skip); }
   async obtenerMateriasPaginadas(limit, skip) { return await SubjectRepository.findPaged(limit, skip); }
+  async obtenerMateriasPorInstitucion(instId) { return await SubjectRepository.findByInstitution(instId); }
 }
 
 module.exports = new OnboardingService();

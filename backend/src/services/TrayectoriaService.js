@@ -18,10 +18,10 @@ class TrayectoriaService {
 
         const institucion = await InstitutionRepository.findById(materia.institucion);
 
-        // 2. Neo4j: Registrar la cursada individual
+        // Neo4j: Registrar la cursada individual
         await GraphRepository.registrarCursada(estudianteId, materiaId, nota, anio);
 
-        // 3. Cassandra: Actualizar analítica agregada (No bloqueante)
+        // Cassandra: Actualizar analítica agregada
         AnaliticaRepo.actualizarMetricasMateria({
             institucionId: institucion._id,
             materiaId: materia._id,
@@ -34,7 +34,7 @@ class TrayectoriaService {
             nivel: materia.nivel || "Grado"
         }).catch(err => console.error("⚠️ Error en Cassandra Analítica:", err));
 
-        // REGISTRO DE AUDITORÍA EN CASSANDRA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'CURSAR_MATERIA', {
             materia: materia.nombre,
             nota,
@@ -51,7 +51,7 @@ class TrayectoriaService {
     async actualizarTrayectoriaMateria(estudianteId, materiaId, datos) {
         const resultado = await GraphRepository.actualizarCursada(estudianteId, materiaId, datos.nota, datos.anio);
         
-        // REGISTRO DE AUDITORÍA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'ACTUALIZAR_CURSADA', {
             materiaId,
             nota: datos.nota,
@@ -64,7 +64,7 @@ class TrayectoriaService {
     async eliminarTrayectoriaMateria(estudianteId, materiaId) {
         const resultado = await GraphRepository.eliminarCursada(estudianteId, materiaId);
         
-        // REGISTRO DE AUDITORÍA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'ELIMINAR_CURSADA', { materiaId });
         
         return resultado;
@@ -75,7 +75,7 @@ class TrayectoriaService {
         const { institucionId, desde, hasta } = datos;
         const resultado = await GraphRepository.registrarTrayectoriaInstitucional(estudianteId, institucionId, desde, hasta);
         
-        // REGISTRO DE AUDITORÍA EN CASSANDRA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'INGRESAR_INSTITUCION', {
             institucionId,
             desde
@@ -96,7 +96,7 @@ class TrayectoriaService {
     async actualizarTrayectoriaInstitucion(estudianteId, institucionId, datos) {
         const resultado = await GraphRepository.actualizarTrayectoriaInstitucional(estudianteId, institucionId, datos.desde, datos.hasta);
         
-        // REGISTRO DE AUDITORÍA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'ACTUALIZAR_TRAYECTORIA_INST', {
             institucionId,
             desde: datos.desde,
@@ -109,7 +109,7 @@ class TrayectoriaService {
     async eliminarTrayectoriaInstitucion(estudianteId, institucionId) {
         const resultado = await GraphRepository.eliminarTrayectoriaInstitucional(estudianteId, institucionId);
         
-        // REGISTRO DE AUDITORÍA
+        // Cassandra: Registrar evento de auditoría
         await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteId, 'ELIMINAR_TRAYECTORIA_INST', { institucionId });
         
         return resultado;

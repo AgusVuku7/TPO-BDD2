@@ -1,23 +1,24 @@
 const { getCassandraClient } = require('../utils/DatabaseManager');
-// Ya no necesitamos la importación de uuid acá para estas conversiones
 
 class RepositorioCassandraAnalitica {
     
     async registrarEvento(tipoEntidad, entidadId, accion, detallesObj) {
+        // tipoEntidad (String): Define la categoría del objeto afectado (ej: 'ESTUDIANTE', 'MATERIA', 'INSTITUCION')
+        // entidadId (String/Object): El identificador único de la entidad que sufrió la acción.
+        // accion (String): Descripción de la operación realizada (ej: 'CREAR', 'MODIFICAR', 'ELIMINAR_RELACION').
+        // detallesObj (Object): datos adicionales sobre el evento
         try {
             const client = getCassandraClient();
             const fechaActual = new Date();
             const anioMes = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`;
             const detallesJson = JSON.stringify(detallesObj);
             
-            const query = `
-                INSERT INTO registro_auditoria 
+            const query = `INSERT INTO registro_auditoria 
                 (tipo_entidad, anio_mes, fecha_hora, evento_id, entidad_id, accion, detalles) 
-                VALUES (?, ?, ?, now(), ?, ?, ?)
-            `;
+                VALUES (?, ?, ?, now(), ?, ?, ?)`;
             
             client.execute(query, [tipoEntidad, anioMes, fechaActual, entidadId.toString(), accion, detallesJson], { prepare: true })
-                  .catch(err => console.error("⚠️ Error guardando auditoría:", err));
+                .catch(err => console.error("⚠️ Error guardando auditoría:", err));
         } catch (error) {
             console.error("⚠️ Error en auditoría:", error);
         }
@@ -27,14 +28,21 @@ class RepositorioCassandraAnalitica {
         const client = getCassandraClient();
         const { institucionId, materiaId, materiaNombre, anio, nota, esAprobado, pais, nivel } = datos;
 
-        // ELIMINAMOS LAS CONVERSIONES A UUID. AHORA USAMOS LOS IDS COMO STRING DIRECTAMENTE.
         const instId = institucionId.toString();
         const matId = materiaId.toString();
+        // Clasifica la nota en tres categorías: '7-10', '4-6' o '0-3', lo cual facilita la creación de gráficos de distribución
         const rango = nota >= 7 ? '7-10' : (nota >= 4 ? '4-6' : '0-3');
         const numAprobado = esAprobado ? 1 : 0;
         const notaCuadrado = Math.pow(nota, 2);
 
-        // 1. Tabla Analítica por Institución
+        //-------------------------------------------
+        // Actualización de tres tablas analíticas
+        //-------------------------------------------
+
+        // Tabla Analítica por Institución
+
+        // Busca si ya existen datos para esa institución, año y materia. 
+        // Si existen, los suma a los nuevos valores. Si no, inserta un nuevo registro.
         const q1 = `SELECT suma_notas, total_estudiantes, total_aprobados FROM analitica_por_institucion WHERE institucion_id = ? AND anio_lectivo = ? AND materia_id = ?`;
         const res1 = await client.execute(q1, [instId, anio, matId], { prepare: true });
         
@@ -43,7 +51,7 @@ class RepositorioCassandraAnalitica {
         let totalAprob = esAprobado ? 1 : 0;
         
         if (res1.rowLength > 0) {
-            const r = res1.first();
+            const r = res1.first(); // extrae la primera (y única) fila encontrada en la consulta.
             sumaNotas += r.suma_notas;
             totalEst += r.total_estudiantes;
             totalAprob += r.total_aprobados;
@@ -54,7 +62,8 @@ class RepositorioCassandraAnalitica {
             [instId, anio, matId, materiaNombre, sumaNotas, totalEst, totalAprob], { prepare: true }
         );
 
-        // 2. Tabla Distribución
+        // Tabla Distribución -- NO SE USA AL FINAL, PERO DEJO EL CÓDIGOS POR SI QUEREMOS HACER GRÁFICOS DE DISTRIBUCIÓN EN EL FUTURO
+
         const q2 = `SELECT cantidad_estudiantes FROM distribucion_por_pais_nivel WHERE pais = ? AND nivel_educativo = ? AND anio_lectivo = ? AND rango_nota = ?`;
         const res2 = await client.execute(q2, [pais, nivel || 'Desconocido', anio, rango], { prepare: true });
         
@@ -66,7 +75,8 @@ class RepositorioCassandraAnalitica {
             [pais, nivel || 'Desconocido', anio, rango, cantEst], { prepare: true }
         );
 
-        // 3. Tabla Métricas Desvío
+        // Tabla Métricas Desvío
+
         const q3 = `SELECT suma_notas, suma_cuadrados_notas, total_muestras FROM metricas_desvio_estandar WHERE contexto_id = ? AND anio_lectivo = ?`;
         const res3 = await client.execute(q3, [instId, anio], { prepare: true });
         
@@ -87,7 +97,6 @@ class RepositorioCassandraAnalitica {
         );
     }
 
-    // Funciones de obtención (Ya no hace falta la conversión de UUIDs)
     async obtenerDatosPorInstitucion(institucionId, anio) {
         const instId = institucionId.toString();
         const query = 'SELECT * FROM analitica_por_institucion WHERE institucion_id = ? AND anio_lectivo = ?';
@@ -97,23 +106,41 @@ class RepositorioCassandraAnalitica {
     }
 
     async obtenerMetricasDesvio(contextoId, anio) {
+        // Partition Key: contexto_id y anio_lectivo
         const query = 'SELECT * FROM metricas_desvio_estandar WHERE contexto_id = ? AND anio_lectivo = ?';
         const result = await getCassandraClient().execute(query, [contextoId.toString(), anio], { prepare: true });
         return result.first();
     }
 
+    async obtenerEventosAuditoria(limite = 50) {
+        const client = getCassandraClient();
+        const fechaActual = new Date();
+        const anioMes = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Buscamos en todas nuestras entidades base para este mes
+        const tipos = ['ESTUDIANTE', 'MATERIA', 'INSTITUCION', 'RELACION'];
+        let todosLosEventos = [];
+
+        // Partition Key: tipo_entidad y anio_mes
+        for (const tipo of tipos) {
+            const query = `SELECT * FROM registro_auditoria WHERE tipo_entidad = ? AND anio_mes = ? LIMIT ?`;
+            const result = await client.execute(query, [tipo, anioMes, limite], { prepare: true });
+            todosLosEventos = todosLosEventos.concat(result.rows);
+        }
+        
+        // Los ordenamos desde el más reciente al más antiguo
+        todosLosEventos.sort((a, b) => b.fecha_hora - a.fecha_hora);
+        
+        return todosLosEventos.slice(0, limite);
+    }
+
     async obtenerMetricasInstitucion(institucionId, anio, materiaId) {
-        const client = getCassandraClient(); // Obtención del cliente configurado
+        const client = getCassandraClient();
         
-        // Consulta SQL de Cassandra (CQL)
-        const query = `
-            SELECT suma_notas, total_estudiantes, total_aprobados 
+        const query = `SELECT suma_notas, total_estudiantes, total_aprobados 
             FROM analitica_por_institucion 
-            WHERE institucion_id = ? AND anio_lectivo = ? AND materia_id = ?
-        `;
+            WHERE institucion_id = ? AND anio_lectivo = ? AND materia_id = ?`;
         
-        // IMPORTANTE: Conversión explícita de tipos
-        // Cassandra espera 'text' para los IDs y 'int' para el año
         const params = [
             institucionId.toString(), 
             parseInt(anio), 
@@ -133,28 +160,6 @@ class RepositorioCassandraAnalitica {
             console.error('❌ Error al obtener métricas de institución en Cassandra:', error);
             throw error;
         }
-    }
-
-    // --- FUNCIÓN PARA EL PANEL DE AUDITORÍA --- \\
-    async obtenerEventosAuditoria(limite = 50) {
-        const client = getCassandraClient();
-        const fechaActual = new Date();
-        const anioMes = `${fechaActual.getFullYear()}-${String(fechaActual.getMonth() + 1).padStart(2, '0')}`;
-        
-        // Buscamos en todas nuestras entidades base para este mes
-        const tipos = ['ESTUDIANTE', 'MATERIA', 'INSTITUCION', 'RELACION'];
-        let todosLosEventos = [];
-        
-        for (const tipo of tipos) {
-            const query = `SELECT * FROM registro_auditoria WHERE tipo_entidad = ? AND anio_mes = ? LIMIT ?`;
-            const result = await client.execute(query, [tipo, anioMes, limite], { prepare: true });
-            todosLosEventos = todosLosEventos.concat(result.rows);
-        }
-        
-        // Los ordenamos desde el más reciente al más antiguo
-        todosLosEventos.sort((a, b) => b.fecha_hora - a.fecha_hora);
-        
-        return todosLosEventos.slice(0, limite);
     }
 }
 

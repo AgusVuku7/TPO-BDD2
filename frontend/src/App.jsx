@@ -12,7 +12,7 @@ import AuditoriaPanel from './components/analitica/AuditoriaPanel';
 
 function App() {
   const [view, setView] = useState('students');
-  //Estado para saber si estamos viendo el detalle de una materia
+  // Estado para saber si estamos viendo el detalle de una materia
   const [selectedMateriaId, setSelectedMateriaId] = useState(null);
   const [refreshMatrix, setRefreshMatrix] = useState(0);
 

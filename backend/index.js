@@ -10,10 +10,10 @@ async function startServer() {
   try {
     console.log('🚀 Iniciando sistema EduGrade Global...');
 
-    //Conectamos todas las bases juntas (Mongo + Neo4j + Redis + Cassandra)
+    // Conectamos todas las bases juntas (Mongo + Neo4j + Redis + Cassandra)
     await connectAll(); 
 
-    //Levantamos el servidor
+    // Levantamos el servidor
     app.listen(PORT, () => {
       console.log(`📡 Servidor API escuchando en puerto ${PORT}`);
     });

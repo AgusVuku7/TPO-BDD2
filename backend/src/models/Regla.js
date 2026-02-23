@@ -3,7 +3,7 @@ class Regla {
     this.origen = origen?.toUpperCase();
     this.destino = destino?.toUpperCase();
     this.version = version || '1.0';
-    this.timestamp = Date.now(); // Cumple con el requisito Append-only
+    this.timestamp = Date.now(); // Al final no lo usamos para append-only ya que guardamos las relgas en lista, pero lo dejamos por si queremos usarlo para auditoría o algo similar
     this.mapping = mapping;
   }
 

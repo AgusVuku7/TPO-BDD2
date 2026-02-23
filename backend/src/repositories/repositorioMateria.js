@@ -37,16 +37,6 @@ class SubjectRepository {
     ]);
     return { data, total };
   }
-
-    // Buscar materias de una institución específica
-  // async findByInstitution(instId) {
-  //   return await Subject.find({ institucion: instId });
-  // }
-
-  // Buscar por nivel educativo (útil para el RF1)
-  // async findByLevel(nivel) {
-  //   return await Subject.find({ nivel });
-  // }
 }
 
 module.exports = new SubjectRepository();

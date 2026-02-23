@@ -9,13 +9,15 @@ const analisticaRoutes = require('./api/routes/analitica');
 
 const app = express();
 
-// Middlewares
+// Para permitir peticiones desde http://localhost:5173 (donde corre el frontend)
 app.use(cors({
      origin: 'http://localhost:5173'
 }));
+
+// Para que el servidor pueda entender y procesar automáticamente los datos que vienen en formato JSON de las solcitudes HTTP
 app.use(express.json());
 
-// Rutas base
+// Definición de Rutas Base
 app.use('/api/estudiante', studentRoutes);
 app.use('/api/institucion', institutionRoutes);
 app.use('/api/materia', materiaRoutes);

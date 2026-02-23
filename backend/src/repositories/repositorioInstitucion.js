@@ -33,10 +33,6 @@ class InstitutionRepository {
     ]);
     return { data, total };
   }
-
-  // async findBySystem(sistema) {
-  //   return await Institution.find({ sistema_educativo: sistema });
-  // }
 }
 
 module.exports = new InstitutionRepository();

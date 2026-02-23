@@ -11,14 +11,11 @@ async function inicializarCassandra() {
     try {
         console.log("🧹 Limpiando base de datos existente...");
         
-        // 1. Eliminar Keyspace si existe (Limpieza total)
+        // Eliminar Keyspace si existe (Limpieza total)
         await client.execute(`DROP KEYSPACE IF EXISTS ${keyspace}`);
         console.log(`✅ Keyspace "${keyspace}" eliminado (si existía).`);
 
         console.log("🚀 Configurando nuevas tablas de analítica para EduGrade...");
-
-        // Borramos el keyspace anterior para asegurarnos de que tome los cambios de UUID a TEXT
-        await client.execute(`DROP KEYSPACE IF EXISTS edugrade_analitica`);
         
         await client.execute(`
             CREATE KEYSPACE IF NOT EXISTS ${keyspace} 
@@ -29,7 +26,6 @@ async function inicializarCassandra() {
         console.log("✅ Keyspace creado y seleccionado.");
 
         const queries = [
-            // CAMBIO AQUÍ: institucion_id y materia_id ahora son TEXT
             `CREATE TABLE IF NOT EXISTS analitica_por_institucion (
                 institucion_id text,
                 anio_lectivo int,
@@ -41,6 +37,7 @@ async function inicializarCassandra() {
                 PRIMARY KEY (institucion_id, anio_lectivo, materia_id)
             ) WITH CLUSTERING ORDER BY (anio_lectivo DESC)`,
 
+            // No la usamos al final
             `CREATE TABLE IF NOT EXISTS distribucion_por_pais_nivel (
                 pais text,
                 nivel_educativo text,
@@ -50,6 +47,7 @@ async function inicializarCassandra() {
                 PRIMARY KEY ((pais, nivel_educativo), anio_lectivo, rango_nota)
             )`,
 
+            // No la usamos al final
             `CREATE TABLE IF NOT EXISTS analitica_sistemas_historico (
                 sistema_educativo text,
                 anio_lectivo int,

@@ -4,15 +4,15 @@ const { getRedisClient } = require('../utils/DatabaseManager');
 
 class ConversionService {
   constructor() {
-    this.localCache = {}; // Cumple con el requisito de "Cacheo de conversiones frecuentes"
+    this.localCache = {}; // Guarda las reglas en la memoria
   }
 
+  // La usamos para limpiar Redis durante pruebas o reinicios del script
   async limpiarReglas() {
     try {
       const redisClient = getRedisClient();
       
       // Borra todas las llaves de la base de datos actual en Redis
-      // Como usas la versión 5.10.0 de la librería 'redis', es una función asíncrona.
       await redisClient.flushDb();
       
       // Es fundamental vaciar también el caché en memoria del servicio
@@ -25,10 +25,10 @@ class ConversionService {
     }
   }
 
-  // RF2: Registro de nuevas normativas con versionado
+  // Valida la estructura y la inserta en el historial de Redis.
   async guardarRegla(datosRegla) {
     const nuevaRegla = new Regla(datosRegla);
-    nuevaRegla.validar();
+    nuevaRegla.validar(); // método de models/Regla.js
 
     // Las reglas se guardan en listas de Redis (LPUSH) para mantener el historial
     const historyKey = `regla:${nuevaRegla.origen}:${nuevaRegla.destino}:history`;
@@ -41,7 +41,6 @@ class ConversionService {
     return historyKey;
   }
 
-  // RF2: Aplicación de reglas en tiempo real con auditoría del criterio aplicado
   async convertirNota(origen, destino, notaOriginal) {
     const _origen = origen?.toUpperCase();
     const _destino = destino?.toUpperCase();
@@ -60,10 +59,12 @@ class ConversionService {
       regla = await repositorioReglas.getLatestRule(historyKey);
       
       if (!regla) throw new Error(`No existe normativa para convertir de ${_origen} a ${_destino}.`);
-      this.localCache[cacheKey] = regla; // Alimentamos el caché
+
+      // 3. Lo gaurdamos en caché para futuras consultas
+      this.localCache[cacheKey] = regla;
     }
 
-    // 3. Aplicación de la lógica de mapeo (Híbrida: Letras y Números)
+    // Aplicación de la lógica de mapeo (Híbrida: Letras y Números)
     const mapeo = regla.mapping.find(m => {
       // A. Coincidencia exacta con min o max (Ideal para 'A*' o los extremos)
       if (notaNormalizada === m.min.toString().toUpperCase() || 
@@ -86,7 +87,6 @@ class ConversionService {
 
     if (!mapeo) throw new Error(`La nota "${notaOriginal}" no tiene una equivalencia definida.`);
 
-    // 4. RETORNO CON AUDITORÍA (Cumple el Anexo RF2)
     return {
       resultado: mapeo.result,
       label: mapeo.label,
@@ -98,16 +98,16 @@ class ConversionService {
   }
 
   async obtenerTodas() {
-  // 1. Pedimos las llaves al repo
-  const keys = await repositorioReglas.getAllRuleKeys();
-  
-  // 2. Mapeamos cada llave a su regla más reciente
-  const promesas = keys.map(key => repositorioReglas.getLatestRule(key));
-  const resultados = await Promise.all(promesas);
+    // Pedimos las llaves al repo
+    const keys = await repositorioReglas.getAllRuleKeys();
+    
+    // Mapeamos cada llave a su regla más reciente
+    const promesas = keys.map(key => repositorioReglas.getLatestRule(key));
+    const resultados = await Promise.all(promesas);
 
-  // Filtramos nulos por si alguna lista quedó vacía
-  return resultados.filter(r => r !== null);
-}
+    // Filtramos nulos por si alguna lista quedó vacía
+    return resultados.filter(r => r !== null);
+  }
 }
 
 module.exports = new ConversionService();

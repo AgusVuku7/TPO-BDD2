@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ConversionService = require('../../services/ConversionService');
 
-// RUTA PARA CARGAR UNA REGLA (Uso administrativo/seeding)
+// RUTA PARA CARGAR UNA REGLA
 router.post('/regla', async (req, res) => {
   try {
     const key = await ConversionService.guardarRegla(req.body);
@@ -25,7 +25,6 @@ router.get('/convertir', async (req, res) => {
     const resultado = await ConversionService.convertirNota(origen, destino, nota);
     res.json(resultado);
   } catch (error) {
-    // Diferenciamos errores de "no encontrado" vs errores de "validación"
     const status = error.message.includes("No existe") ? 404 : 400;
     res.status(status).json({ error: error.message });
   }

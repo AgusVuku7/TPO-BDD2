@@ -18,6 +18,7 @@ router.get('/desvios/:contexto/:anio', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+// Reporte de eventos de auditoría
 router.get('/auditoria/eventos', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 50;

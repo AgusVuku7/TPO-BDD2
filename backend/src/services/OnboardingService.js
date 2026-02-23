@@ -6,10 +6,9 @@ const AnaliticaRepo = require('../repositories/repositorioCassandraAnalitica'); 
 
 class OnboardingService {
   async registrarEstudiante(datos) {
-    // Guardamos en MongoDB
+    // MongoDB: Creamos el estudiante
     const estudianteMongo = await StudentRepository.create(datos);
-
-    // Replicamos en Neo4j
+    // Neo4j: Sincronizamos con el grafo
     try {
       await GraphRepository.crearEstudiante(
         estudianteMongo._id.toString(),
@@ -18,8 +17,7 @@ class OnboardingService {
     } catch (error) {
       console.error('⚠️ Error sincronizando estudiante con Neo4j:', error.message);
     }
-
-    // REGISTRO EN CASSANDRA
+    // Cassandra: Registrar evento de auditoría
     await AnaliticaRepo.registrarEvento('ESTUDIANTE', estudianteMongo._id, 'CREAR_ESTUDIANTE', { 
         nombre: estudianteMongo.nombre, 
         mail: estudianteMongo.mail 
@@ -29,30 +27,32 @@ class OnboardingService {
   }
 
   async actualizarEstudiante(id, datos) {
+    // MongoDB: Actualizamos el estudiante
     const estudianteMongo = await StudentRepository.update(id, datos);
     if (estudianteMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         await GraphRepository.actualizarEstudiante(id, estudianteMongo.nombre);
       } catch (error) {
         console.error('⚠️ Error actualizando estudiante en Neo4j:', error.message);
       }
-
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       await AnaliticaRepo.registrarEvento('ESTUDIANTE', id, 'ACTUALIZAR_ESTUDIANTE', { datos });
     }
     return estudianteMongo;
   }
 
   async eliminarEstudiante(id) { 
+    // MongoDB: Eliminamos el estudiante
     const resultadoMongo = await StudentRepository.delete(id); 
     if (resultadoMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         await GraphRepository.eliminarEstudiante(id);
       } catch (error) {
         console.error('⚠️ Error eliminando estudiante en Neo4j:', error.message);
       }
-
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       await AnaliticaRepo.registrarEvento('ESTUDIANTE', id, 'ELIMINAR_ESTUDIANTE', {});
     }
     return resultadoMongo;
@@ -62,8 +62,10 @@ class OnboardingService {
   async obtenerEstudiantesPaginados(limit, skip) { return await StudentRepository.findPaged(limit, skip); }
 
   async registrarInstitucion(datos) {
+    // MongoDB: Creamos la institución
     const institucionMongo = await InstitutionRepository.create(datos);
     try {
+      // Neo4j: Sincronizamos con el grafo
       await GraphRepository.crearInstitucion(
         institucionMongo._id.toString(),
         institucionMongo.nombre,
@@ -72,46 +74,45 @@ class OnboardingService {
     } catch (error) {
       console.error('⚠️ Error sincronizando institución con Neo4j:', error.message);
     }
-
-    // REGISTRO EN CASSANDRA
+    // Cassandra: Registrar evento de auditoría
     await AnaliticaRepo.registrarEvento('INSTITUCION', institucionMongo._id, 'CREAR_INSTITUCION', { 
         nombre: institucionMongo.nombre, 
         pais: institucionMongo.pais 
     });
-
     return institucionMongo;
   }
 
   async actualizarInstitucion(id, datos) { 
+    // MongoDB: Actualizamos la institución
     const institucionMongo = await InstitutionRepository.update(id, datos); 
     if (institucionMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         await GraphRepository.actualizarInstitucion(id, institucionMongo.nombre, institucionMongo.pais);
       } catch (error) {
         console.error('⚠️ Error actualizando institución en Neo4j:', error.message);
       }
-
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       try {
         await AnaliticaRepo.registrarEvento('INSTITUCION', id, 'ACTUALIZAR_INSTITUCION', { datos });
       } catch (error) {
         console.error('⚠️ Error CASSANDRA:', error.message);
       }
-      
     }
     return institucionMongo;
   }
 
   async eliminarInstitucion(id) { 
+    // MongoDB: Eliminamos la institución
     const resultadoMongo = await InstitutionRepository.delete(id); 
     if (resultadoMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         await GraphRepository.eliminarInstitucion(id);
       } catch (error) {
         console.error('⚠️ Error eliminando institución en Neo4j:', error.message);
       }
-
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       await AnaliticaRepo.registrarEvento('INSTITUCION', id, 'ELIMINAR_INSTITUCION', {});
     }
     return resultadoMongo;
@@ -121,11 +122,13 @@ class OnboardingService {
   async obtenerInstitucionesPaginadas(limit, skip) { return await InstitutionRepository.findPaged(limit, skip); }
 
   async registrarMateria(datos) {
+    // Validamos que la institución exista en MongoDB antes de crear la materia
     const inst = await InstitutionRepository.findById(datos.institucion);
     if (!inst) throw new Error("La institución no existe");
-
+    // MongoDB: Creamos la materia
     const materiaMongo = await SubjectRepository.create(datos);
     try {
+      // Neo4j: Sincronizamos con el grafo
       await GraphRepository.crearMateria(
         materiaMongo._id.toString(),
         materiaMongo.nombre,
@@ -135,7 +138,7 @@ class OnboardingService {
       console.error('⚠️ Error sincronizando materia con Neo4j:', error.message);
     }
 
-    // REGISTRO EN CASSANDRA
+    // Cassandra: Registrar evento de auditoría
     await AnaliticaRepo.registrarEvento('MATERIA', materiaMongo._id, 'CREAR_MATERIA', { 
         nombre: materiaMongo.nombre, 
         institucion: materiaMongo.institucion 
@@ -145,30 +148,30 @@ class OnboardingService {
   }
 
   async agregarCorrelatividad(idMateria, idCorrelativa) {
+    // Validamos que ambas materias existan en MongoDB antes de crear la correlatividad
     const [materia, correlativa] = await Promise.all([
       SubjectRepository.findById(idMateria),
       SubjectRepository.findById(idCorrelativa)
     ]);
-
     if (!materia || !correlativa) throw new Error("una o ambas materias no existen");
 
     try {
+      // Neo4j: Creamos la correlatividad en el grafo
       await GraphRepository.agregarCorrelatividad(idMateria, idCorrelativa);
     } catch (error) {
       console.error('⚠️ Error sincronizando correlatividad con Neo4j:', error);
       throw new Error("No se pudo registrar la correlatividad en grafos.");
     }
-
-    // REGISTRO EN CASSANDRA
+    // Cassandra: Registrar evento de auditoría
     await AnaliticaRepo.registrarEvento('RELACION', idMateria, 'AGREGAR_CORRELATIVIDAD', { 
         correlativaId: idCorrelativa 
     });
-
     return { mensaje: "Correlatividad registrada con exito" };
   }
 
   async obtenerCorrelativas(idMateria) {
     try {
+      // Neo4j: Obtenemos las correlatividades desde el grafo
       return await GraphRepository.obtenerCorrelativas(idMateria);
     } catch (error) {
       console.error('⚠️ Error obteniendo correlativas:', error);
@@ -177,9 +180,10 @@ class OnboardingService {
   }
 
   async registrarEquivalencia(idOrigen, idDestino, porcentaje) {
+    // Neo4j: Creamos la equivalencia en el grafo
     const resultado = await GraphRepository.crearEquivalencia(idOrigen, idDestino, porcentaje);
     
-    // REGISTRO EN CASSANDRA
+    // Cassandra: Registrar evento de auditoría
     await AnaliticaRepo.registrarEvento('RELACION', idOrigen, 'REGISTRAR_EQUIVALENCIA', { 
         destino: idDestino, 
         porcentaje 
@@ -193,9 +197,11 @@ class OnboardingService {
   }
 
   async actualizarMateria(id, datos) { 
+    // MongoDB: Actualizamos la materia
     const materiaMongo = await SubjectRepository.update(id, datos); 
     if (materiaMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         const inst = await InstitutionRepository.findById(materiaMongo.institucion);
         const pais = inst ? inst.pais : 'Desconocido';
         await GraphRepository.actualizarMateria(id, materiaMongo.nombre, pais);
@@ -203,22 +209,24 @@ class OnboardingService {
         console.error('⚠️ Error actualizando materia en Neo4j:', error.message);
       }
 
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       await AnaliticaRepo.registrarEvento('MATERIA', id, 'ACTUALIZAR_MATERIA', { datos });
     }
     return materiaMongo;
   }
 
-  async eliminarMateria(id) { 
+  async eliminarMateria(id) {
+    // MongoDB: Eliminamos la materia
     const resultadoMongo = await SubjectRepository.delete(id); 
     if (resultadoMongo) {
       try {
+        // Neo4j: Sincronizamos con el grafo
         await GraphRepository.eliminarMateria(id);
       } catch (error) {
         console.error('⚠️ Error eliminando materia en Neo4j:', error.message);
       }
 
-      // REGISTRO EN CASSANDRA
+      // Cassandra: Registrar evento de auditoría
       await AnaliticaRepo.registrarEvento('MATERIA', id, 'ELIMINAR_MATERIA', {});
     }
     return resultadoMongo;

@@ -11,11 +11,10 @@ class repositorioGrafoTrayectoria {
         try {
 
             await session.run(
-                `
-                MATCH (e:Estudiante {id: $estudianteId}), (m:Materia {id: $materiaId})
+                // MARGE Busca el patrón; si no existe, lo crea.
+                `MATCH (e:Estudiante {id: $estudianteId}), (m:Materia {id: $materiaId})
                 MERGE (e)-[r:CURSO {nota: $nota, anio: $anio}]->(m)
-                RETURN type(r)
-                `,
+                RETURN type(r)`,
 
                 {
                     estudianteId: estudianteId.toString(),
@@ -97,11 +96,9 @@ class repositorioGrafoTrayectoria {
         try {
 
             await session.run(
-                `
-                MATCH (e:Estudiante {id: $estudianteId}), (i:Institucion {id: $institucionId})
+                `MATCH (e:Estudiante {id: $estudianteId}), (i:Institucion {id: $institucionId})
                 MERGE (e)-[r:ASISTE {desde: $desde, hasta: $hasta}]->(i)
-                RETURN type(r)
-                `,
+                RETURN type(r)`,
 
                 {
                     estudianteId: estudianteId.toString(),
